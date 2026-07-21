@@ -43,11 +43,27 @@ def preview_layout(monkeypatch):
     for name, module in modules.items():
         monkeypatch.setitem(sys.modules, name, module)
 
+    monkeypatch.syspath_prepend(str(SCRIPT_PATH.parents[1]))
     spec = importlib.util.spec_from_file_location("preview_layout_under_test", SCRIPT_PATH)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_preview_layout_fixture_restores_module_root_in_sys_path():
+    module_root = str(SCRIPT_PATH.parents[1])
+    original_sys_path = sys.path.copy()
+    sys.path[:] = [entry for entry in sys.path if entry != module_root]
+    module_patch = pytest.MonkeyPatch()
+
+    try:
+        preview_layout.__wrapped__(module_patch)
+        module_patch.undo()
+        assert module_root not in sys.path
+    finally:
+        module_patch.undo()
+        sys.path[:] = original_sys_path
 
 
 def write_template(path: Path, *, task: str = "demo", episodes: int = 3) -> dict:
