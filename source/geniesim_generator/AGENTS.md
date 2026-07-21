@@ -72,6 +72,7 @@ It has been specialized to drive Genie Sim's `ASSETS_INDEX` (from the
 ## 3. Routing map
 
 - **Add/change a generator output** (USD, graph, json) → `app.py:main` + `helper.gen_scene_layout_info` + `utils/usd.py`
+- **Change runtime path discovery** (assets / benchmark output) → `paths.py`; explicit environment overrides must remain higher priority than package/source discovery
 - **Add/change a DSL surface the LLM can call** → `helper.py` (re-exports + `usd()`, `get_*_info`) and `scene_language/`
 - **DSL registration / lookup** (`register`, `library_call`, the `info["stack"]` frame) → `scene_language/dsl_utils.py`
 - **Shape composition** (`concat_shapes`, `transform_shape`, bbox math) → `scene_language/shape_utils.py` + `_shape_utils.py`
@@ -89,6 +90,9 @@ It has been specialized to drive Genie Sim's `ASSETS_INDEX` (from the
 ```bash
 # Generate one scene from the current LLM_RESULT.py
 # (script-relative imports — run from the package dir, NOT via `python -m`)
+# Optional overrides when package/source discovery is not appropriate:
+# export GENIESIM_ASSETS_DIR=/path/to/geniesim_assets
+# export GENIESIM_GENERATOR_OUTPUT_DIR=/path/to/benchmark/config/llm_task
 cd src/geniesim_generator && PYTHONPATH=../.. python app.py --scene_id <id> [--task_gen]
 
 # Live preview in Isaac Sim (watches LLM_RESULT.py, reloads on save)
@@ -110,8 +114,11 @@ docker compose --profile vl   up --build   # Qwen3-VL embedding (local GPU + NVI
 
 `app.py` uses script-relative imports (`from helper import *`,
 `from LLM_RESULT import root_scene`), so it must run with the package dir on
-the path / as cwd. Outputs land under
-`benchmark/config/llm_task/<scene_id>/<n>/`. See
+the path / as cwd. Assets resolve from `GENIESIM_ASSETS_DIR` or the installed
+`geniesim_assets` package. Outputs resolve from
+`GENIESIM_GENERATOR_OUTPUT_DIR`, an installed `geniesim_benchmark`, or a sibling
+source checkout, in that order, and land under `<scene_id>/<n>/`. Invalid
+explicit overrides fail immediately instead of silently falling back. See
 [`server_readme.txt`](src/geniesim_generator/server_readme.txt) for text-vs-VL
 deployment details.
 

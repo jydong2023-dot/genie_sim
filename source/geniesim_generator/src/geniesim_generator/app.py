@@ -16,6 +16,7 @@ from helper import *
 
 
 import geniesim_generator.scene_language.mi_helper
+from geniesim_generator.paths import resolve_generator_output_root
 import shutil
 
 current_path = os.path.abspath(__file__)
@@ -40,30 +41,28 @@ def main(args):
     # pprint(scene_info)
 
     # output folder
-    if args.scene_id != "":
-        scene_path0_dir = os.path.join(GENIESIM_PATH, f"benchmark/config/llm_task/{args.scene_id}")
-    else:
-        scene_path0_dir = os.path.join(GENIESIM_PATH, f"benchmark/config/llm_task/{scene_info['scene_id']}")
-    if not os.path.exists(scene_path0_dir):
-        os.makedirs(scene_path0_dir, exist_ok=True)
-    num = sum([len(d) for r, d, folder in os.walk(scene_path0_dir)])
-    scene_path1_dir = os.path.join(str(scene_path0_dir), f"{num}")
-    os.makedirs(os.path.join(str(scene_path0_dir), f"{num}"), exist_ok=True)
+    output_root = resolve_generator_output_root()
+    scene_name = args.scene_id or scene_info["scene_id"]
+    scene_path0_dir = output_root / scene_name
+    scene_path0_dir.mkdir(parents=True, exist_ok=True)
+    num = sum(len(directories) for _, directories, _ in os.walk(scene_path0_dir))
+    scene_path1_dir = scene_path0_dir / str(num)
+    scene_path1_dir.mkdir(parents=True, exist_ok=True)
 
     # dump info
-    nx.nx_agraph.write_dot(G, os.path.join(scene_path1_dir, "graph.dot"))
+    nx.nx_agraph.write_dot(G, scene_path1_dir / "graph.dot")
     H = nx.nx_agraph.to_agraph(G)
     for n in G.nodes:
         tags = G.nodes[n].get("tags", [])
         H.get_node(n).attr["tags"] = f"{n}\\n{','.join(tags)}"
-    H.draw(os.path.join(scene_path1_dir, "graph.svg"), prog="dot")
-    with open(scene_path1_dir + "/scene_info.json", "w") as f:
+    H.draw(scene_path1_dir / "graph.svg", prog="dot")
+    with open(scene_path1_dir / "scene_info.json", "w") as f:
         json.dump(scene_info, f, indent=2)
-    with open(scene_path1_dir + "/scene_info.json", "r") as f:
+    with open(scene_path1_dir / "scene_info.json", "r") as f:
         scene_info_load = json.load(f)
 
     # scene path
-    scene_path = scene_path1_dir + "/scene.usda"
+    scene_path = scene_path1_dir / "scene.usda"
 
     from geniesim_generator.utils.usd import gen_scene_usda
 
@@ -88,10 +87,10 @@ def main(args):
         )
 
     # convert to usda
-    gen_scene_usda(scene_path, object_info_list)
+    gen_scene_usda(str(scene_path), object_info_list)
 
     # fmt: off
-    copy_llm_result(os.path.join(scene_path1_dir, "LLM_RESULT.py"))
+    copy_llm_result(scene_path1_dir / "LLM_RESULT.py")
 
     # fmt: on
 
