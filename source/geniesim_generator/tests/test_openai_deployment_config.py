@@ -14,7 +14,8 @@ class OpenAIDeploymentConfigTest(unittest.TestCase):
             (ROOT / "compose.yaml").read_text(encoding="utf-8")
         )
         text_env = compose["services"]["mcp-server_text"]["environment"]
-        webui_env = compose["services"]["open-webui"]["environment"]
+        webui = compose["services"]["open-webui"]
+        webui_env = webui["environment"]
 
         self.assertIn(
             "TEXT_EMBEDDING_API_KEY=${OPENAI_API_KEY:?set OPENAI_API_KEY}",
@@ -25,6 +26,9 @@ class OpenAIDeploymentConfigTest(unittest.TestCase):
         )
         self.assertIn(
             "OPENAI_API_BASE_URL=https://api.openai.com/v1", webui_env
+        )
+        self.assertEqual(
+            webui["image"], "ghcr.io/open-webui/open-webui:main-slim"
         )
 
     def test_exports_target_openai_without_embedding_a_secret(self):

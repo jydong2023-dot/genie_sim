@@ -86,7 +86,7 @@ services:
     working_dir: /opt/geniesim_generator
     restart: unless-stopped
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ghcr.io/open-webui/open-webui:main-slim
     container_name: open-webui
     network_mode: host
     volumes:
