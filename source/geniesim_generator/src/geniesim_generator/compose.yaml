@@ -70,6 +70,7 @@ services:
       - "8765:8765"
     environment:
       - EMBEDDING_MODE=text
+      - TEXT_EMBEDDING_API_KEY=${OPENAI_API_KEY:?set OPENAI_API_KEY}
     volumes:
       - ../..:/opt/geniesim_generator                      # distribution (pyproject + src/)
       - ${GENIESIM_ASSETS_DIR:?set GENIESIM_ASSETS_DIR to the host path of the pip-installed geniesim_assets package (see header)}:/opt/geniesim_assets:ro
@@ -85,15 +86,23 @@ services:
     working_dir: /opt/geniesim_generator
     restart: unless-stopped
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ghcr.io/open-webui/open-webui:main-slim
     container_name: open-webui
     network_mode: host
     volumes:
       - ../..:/opt/geniesim_generator
+      - .:/geniesim/generator
       - ./server_open-webui:/app/backend/data
     environment:
       - WEBUI_AUTH=False
+      - PORT=3000
       - HF_ENDPOINT=http://hf-mirror.com
+      - OPENAI_API_KEY=${OPENAI_API_KEY:?set OPENAI_API_KEY}
+      - OPENAI_API_BASE_URL=https://api.openai.com/v1
+      - RAG_EMBEDDING_ENGINE=openai
+      - RAG_EMBEDDING_MODEL=text-embedding-3-small
+      - RAG_OPENAI_API_KEY=${OPENAI_API_KEY:?set OPENAI_API_KEY}
+      - RAG_OPENAI_API_BASE_URL=https://api.openai.com/v1
     restart: always
 
 volumes:

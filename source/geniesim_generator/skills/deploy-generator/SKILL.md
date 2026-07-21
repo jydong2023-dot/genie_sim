@@ -43,9 +43,9 @@ hardware / credentials:
 
 | | `text` profile | `vl` profile |
 |---|---|---|
-| Embedder | Qwen embedding **API** (Dashscope `text-embedding-v4`) | Qwen3-VL-Embedding **local model** |
+| Embedder | OpenAI embedding **API** (`text-embedding-3-small`) | Qwen3-VL-Embedding **local model** |
 | Hardware | **No GPU** | **NVIDIA GPU + Container Toolkit** |
-| Credentials | **Needs an API key** | None (runs offline after weight download) |
+| Credentials | **Needs an OpenAI API key** | None (runs offline after weight download) |
 | Modality | Text only | Image + text (better retrieval) |
 | Extras | reranker N/A | optional Qwen3-VL reranker |
 
@@ -78,16 +78,23 @@ If unset (or pointing somewhere bogus), compose fails fast with a clear message
 
 ### Option A — `text` (API, no GPU)
 
-1. Edit `server/mcp_text_embedding/text_embedding_config.json` — fill in `api_key`
-   (and confirm `base_url` / `model` / `dimension`):
+1. Load the OpenAI key from an untracked secret source into the current shell:
 
-   ```json
-   { "api_key": "<YOUR_DASHSCOPE_KEY>",
-     "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-     "dashscope_mode": true, "dimension": 2048, "model": "text-embedding-v4" }
+   ```bash
+   export OPENAI_API_KEY=<value from an untracked secret source>
    ```
 
-2. Launch (assumes `GENIESIM_ASSETS_DIR` is already exported — see Prerequisites):
+2. Confirm the non-secret `base_url` / `model` / `dimension` in
+   `server/mcp_text_embedding/text_embedding_config.json`. Leave `api_key`
+   empty because the MCP process receives it from the environment:
+
+   ```json
+   { "api_key": "", "base_url": "https://api.openai.com/v1",
+     "dashscope_mode": false, "dimension": 1024,
+     "model": "text-embedding-3-small" }
+   ```
+
+3. Launch (assumes `GENIESIM_ASSETS_DIR` is already exported — see Prerequisites):
 
    ```bash
    docker compose --profile text up --build
@@ -126,7 +133,8 @@ If unset (or pointing somewhere bogus), compose fails fast with a clear message
   `/file-agent` (`save_file`). Check a route is live:
   `curl -s localhost:8765/assets-agent/openapi.json | python3 -m json.tool | grep paths`
   — non-empty `paths` means `assets-agent` registered.
-- Open WebUI is on host networking (`WEBUI_AUTH=False`) — open it in a browser
+- Open WebUI is on host networking (`WEBUI_AUTH=False`) at
+  `http://localhost:3000` — open it in a browser
   and import the configs from `config/` (see `generate-scene` skill).
 
 ## vl troubleshooting (read before first launch)

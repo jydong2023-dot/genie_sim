@@ -5,7 +5,6 @@
 import os
 import sys
 import logging
-import json
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIRECTORY = os.path.dirname(CURRENT_DIRECTORY)
@@ -42,7 +41,13 @@ if embedding_mode == "vl":
     }
     db = AssetVectorDBVL(config=config)
 else:
-    config = json.load(open(f"{CURRENT_DIRECTORY}/mcp_text_embedding/text_embedding_config.json"))
+    from geniesim_generator.server.text_embedding_config import (
+        load_text_embedding_config,
+    )
+
+    config = load_text_embedding_config(
+        f"{CURRENT_DIRECTORY}/mcp_text_embedding/text_embedding_config.json"
+    )
     db = AssetVectorDB(config=config)
 
 

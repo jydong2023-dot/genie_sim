@@ -103,12 +103,12 @@ python src/geniesim_generator/server/mcp_assets_server.py
 python src/geniesim_generator/server/mcp_assets_info.py
 python src/geniesim_generator/server/mcp_file_server.py
 
-# Full stack: MCP gateway (:8765) + Open WebUI, via Docker — pick ONE embedding profile (see §6)
+# Full stack: MCP gateway (:8765) + Open WebUI (:3000), via Docker — pick ONE embedding profile (see §6)
 # Prereq: pip install geniesim_assets on host, then derive GENIESIM_ASSETS_DIR
 # from the running Python so compose can mount the host's installed copy.
 export GENIESIM_ASSETS_DIR=$(python -c \
     "import geniesim_assets, os; print(os.path.dirname(geniesim_assets.__file__))")
-docker compose --profile text up --build   # Qwen embedding API (no GPU; needs API key)
+docker compose --profile text up --build   # OpenAI embedding API (no GPU; needs API key)
 docker compose --profile vl   up --build   # Qwen3-VL embedding (local GPU + NVIDIA Container Toolkit)
 ```
 
@@ -160,18 +160,21 @@ export GENIESIM_ASSETS_DIR=$(python -c \
     "import geniesim_assets, os; print(os.path.dirname(geniesim_assets.__file__))")
 ```
 
-### Option A — `text` profile (Qwen embedding **API**, no GPU)
+### Option A — `text` profile (OpenAI embedding **API**, no GPU)
 
-Calls a remote embedding API (Dashscope's OpenAI-compatible endpoint). Use
-this when you **don't have a GPU** but **can provide an API key**.
+Calls the OpenAI embedding API. Use this when you **don't have a GPU** but
+**can provide an OpenAI API key**. Keep the key in an untracked secret source
+and export it only for the process that starts Compose.
 
 ```bash
-# 1. Put your key + endpoint in the text config
+# 1. Load your key into the current shell without committing it
+#    export OPENAI_API_KEY=<value from an untracked secret source>
+# 2. Confirm the non-secret endpoint/model in the text config
 #    server/mcp_text_embedding/text_embedding_config.json
-#      { "api_key": "<YOUR_DASHSCOPE_KEY>",
-#        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-#        "dashscope_mode": true, "dimension": 2048, "model": "text-embedding-v4" }
-# 2. From the generator package dir (GENIESIM_ASSETS_DIR already exported, see above):
+#      { "api_key": "", "base_url": "https://api.openai.com/v1",
+#        "dashscope_mode": false, "dimension": 1024,
+#        "model": "text-embedding-3-small" }
+# 3. From the generator package dir (GENIESIM_ASSETS_DIR already exported, see above):
 docker compose --profile text up --build
 ```
 
