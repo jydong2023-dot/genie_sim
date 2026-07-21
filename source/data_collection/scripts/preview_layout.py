@@ -37,7 +37,9 @@ import json
 import math
 import os
 import re
+import secrets
 import socket
+import stat
 import sys
 import tempfile
 import time
@@ -277,18 +279,17 @@ def discover_layout_files(save_path: Path, task_name: str) -> list[Path]:
 
 
 @contextmanager
-def layout_lock(output_root: Path, task_name: str, *, shared: bool):
-    lock_path = output_root / f".{task_name}.preview.lock"
+def layout_lock(root_fd: int, task_name: str):
+    lock_name = f".{task_name}.preview.lock"
     flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
     try:
-        fd = os.open(lock_path, flags, 0o600)
+        fd = os.open(lock_name, flags, 0o600, dir_fd=root_fd)
     except OSError as exc:
-        raise PreviewError(f"Cannot open preview generation lock: {lock_path}") from exc
+        raise PreviewError(f"Cannot open preview generation lock: {lock_name}") from exc
 
-    operation = fcntl.LOCK_SH if shared else fcntl.LOCK_EX
     try:
         try:
-            fcntl.flock(fd, operation | fcntl.LOCK_NB)
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as exc:
             raise PreviewError(
                 f"Layout generation already in progress for task {task_name!r}"
@@ -305,7 +306,12 @@ def layout_lock(output_root: Path, task_name: str, *, shared: bool):
             pass
 
 
-def _rename_noreplace(src: Path, dst: Path) -> None:
+def _rename_noreplace(
+    old_dir_fd: int,
+    old_name: str,
+    new_dir_fd: int,
+    new_name: str,
+) -> None:
     try:
         renameat2 = ctypes.CDLL(None, use_errno=True).renameat2
     except AttributeError as exc:
@@ -321,25 +327,95 @@ def _rename_noreplace(src: Path, dst: Path) -> None:
         ctypes.c_uint,
     )
     renameat2.restype = ctypes.c_int
-    at_fdcwd = -100
     rename_noreplace = 1
     if renameat2(
-        at_fdcwd,
-        os.fsencode(src),
-        at_fdcwd,
-        os.fsencode(dst),
+        old_dir_fd,
+        os.fsencode(old_name),
+        new_dir_fd,
+        os.fsencode(new_name),
         rename_noreplace,
     ) == 0:
         return
 
     error_number = ctypes.get_errno()
     if error_number == errno.EEXIST:
-        raise PreviewError(f"Layout destination already exists: {dst}")
-    if error_number == errno.ENOSYS:
+        raise PreviewError(f"Layout destination already exists: {new_name}")
+    unsupported_errors = {
+        errno.ENOSYS,
+        errno.EINVAL,
+        errno.EOPNOTSUPP,
+    }
+    if error_number in unsupported_errors:
         raise PreviewError(
-            "Atomic no-replace layout publishing is unavailable on this platform"
+            "Atomic no-replace layout publishing is unsupported; "
+            "choose a local Linux filesystem with renameat2 support"
         )
-    raise OSError(error_number, os.strerror(error_number), str(dst))
+    raise OSError(error_number, os.strerror(error_number), new_name)
+
+
+def _remove_directory_contents(dir_fd: int) -> None:
+    for entry in os.scandir(dir_fd):
+        if entry.is_dir(follow_symlinks=False):
+            child_fd = os.open(
+                entry.name,
+                os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=dir_fd,
+            )
+            try:
+                _remove_directory_contents(child_fd)
+            finally:
+                os.close(child_fd)
+            os.rmdir(entry.name, dir_fd=dir_fd)
+        else:
+            os.unlink(entry.name, dir_fd=dir_fd)
+
+
+@contextmanager
+def staging_directory(root_fd: int, task_name: str):
+    for _ in range(10):
+        staging_name = f".{task_name}.preview-{secrets.token_hex(8)}"
+        try:
+            os.mkdir(staging_name, mode=0o700, dir_fd=root_fd)
+            break
+        except FileExistsError:
+            continue
+    else:
+        raise PreviewError("Could not allocate a unique layout staging directory")
+
+    staging_fd = None
+    try:
+        staging_fd = os.open(
+            staging_name,
+            os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=root_fd,
+        )
+        os.mkdir(task_name, mode=0o700, dir_fd=staging_fd)
+        yield staging_name, staging_fd
+    finally:
+        if staging_fd is not None:
+            try:
+                _remove_directory_contents(staging_fd)
+            except OSError:
+                pass
+            try:
+                os.close(staging_fd)
+            except OSError:
+                pass
+        try:
+            os.rmdir(staging_name, dir_fd=root_fd)
+        except OSError:
+            pass
+
+
+def output_root_identity(output_dir: Path) -> tuple[int, int]:
+    output_path = output_dir.expanduser().absolute()
+    try:
+        current = os.stat(output_path, follow_symlinks=False)
+    except OSError as exc:
+        raise PreviewError(f"Preview output root identity changed: {output_path}") from exc
+    if not stat.S_ISDIR(current.st_mode):
+        raise PreviewError(f"Preview output root identity changed: {output_path}")
+    return current.st_dev, current.st_ino
 
 
 def require_positive_episode_count(value: object) -> int:
@@ -361,42 +437,61 @@ def generate_layouts(
     num_episodes = require_positive_episode_count(num_episodes)
     output_root = resolve_output_root(output_dir, create=True)
     save_path = resolve_save_path(output_dir, task_name)
-    with layout_lock(output_root, task_name, shared=False):
-        save_path = resolve_save_path(output_dir, task_name)
-        if save_path.exists():
-            raise PreviewError(
-                f"Layout destination already exists: {save_path}. "
-                "Use --skip-generate to reuse it or choose a new --output-dir."
-            )
+    root_fd = os.open(
+        output_root,
+        os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0),
+    )
+    root_stat = os.fstat(root_fd)
+    root_identity = (root_stat.st_dev, root_stat.st_ino)
+    try:
+        if output_root_identity(output_dir) != root_identity:
+            raise PreviewError(f"Preview output root identity changed: {output_root}")
+        with layout_lock(root_fd, task_name):
+            try:
+                os.stat(task_name, dir_fd=root_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                pass
+            else:
+                raise PreviewError(
+                    f"Layout destination already exists: {save_path}. "
+                    "Use --skip-generate to reuse it or choose a new --output-dir."
+                )
 
-        logger.info(f"Generating {num_episodes} layouts -> {save_path}")
-        tg = TaskGenerator(copy.deepcopy(task_info))
-        with tempfile.TemporaryDirectory(
-            prefix=f".{task_name}.preview-", dir=output_root
-        ) as temp_dir:
-            temporary_dir = Path(temp_dir)
-            staging_task_dir = temporary_dir / task_name
-            staging_task_dir.mkdir()
-            for episode_id in range(num_episodes):
-                output_file = staging_task_dir / f"{task_name}_{episode_id}.json"
-                for _ in range(5):
-                    if tg.generate(str(output_file)):
-                        break
+            logger.info(f"Generating {num_episodes} layouts -> {save_path}")
+            tg = TaskGenerator(copy.deepcopy(task_info))
+            with staging_directory(root_fd, task_name) as (staging_name, staging_fd):
+                task_fd_path = Path(f"/proc/self/fd/{staging_fd}") / task_name
+                for episode_id in range(num_episodes):
+                    output_file = task_fd_path / f"{task_name}_{episode_id}.json"
+                    for _ in range(5):
+                        if tg.generate(str(output_file)):
+                            break
+                    else:
+                        raise PreviewError(
+                            f"Failed to generate layout {episode_id} after 5 attempts"
+                        )
+
+                if output_root_identity(output_dir) != root_identity:
+                    raise PreviewError(
+                        f"Preview output root identity changed: {output_root}"
+                    )
+                try:
+                    os.stat(task_name, dir_fd=root_fd, follow_symlinks=False)
+                except FileNotFoundError:
+                    pass
                 else:
                     raise PreviewError(
-                        f"Failed to generate layout {episode_id} after 5 attempts"
+                        f"Layout destination already exists: {save_path}"
                     )
+                _rename_noreplace(staging_fd, task_name, root_fd, task_name)
 
-            current_output_root = resolve_output_root(output_dir)
-            current_save_path = resolve_save_path(output_dir, task_name)
-            if current_output_root != output_root or current_save_path != save_path:
-                raise PreviewError("Preview output containment changed during generation")
-            if save_path.exists() or save_path.is_symlink():
-                raise PreviewError(f"Layout destination already exists: {save_path}")
-            _rename_noreplace(staging_task_dir, save_path)
-
-        files = discover_layout_files(save_path, task_name)
-        return task_info, save_path, files
+            files = discover_layout_files(save_path, task_name)
+            return task_info, save_path, files
+    finally:
+        try:
+            os.close(root_fd)
+        except OSError:
+            pass
 
 
 def discover_layouts(template_path: Path, output_dir: Path) -> tuple[dict, Path, list[Path]]:
@@ -404,15 +499,8 @@ def discover_layouts(template_path: Path, output_dir: Path) -> tuple[dict, Path,
         task_info = json.load(f)
     task_name = task_info["task"]
     save_path = resolve_save_path(output_dir, task_name)
-    output_root = resolve_output_root(output_dir)
-    if not output_root.is_dir():
-        raise FileNotFoundError(f"No layouts under missing output directory: {output_root}")
     validated_task_name = save_path.name
-    with layout_lock(output_root, validated_task_name, shared=True):
-        current_save_path = resolve_save_path(output_dir, task_name)
-        if current_save_path != save_path:
-            raise PreviewError("Preview output containment changed during discovery")
-        files = discover_layout_files(save_path, validated_task_name)
+    files = discover_layout_files(save_path, validated_task_name)
     if not files:
         raise FileNotFoundError(f"No layouts in {save_path}; omit --skip-generate first")
     return task_info, save_path, files

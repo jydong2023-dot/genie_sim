@@ -3,6 +3,7 @@ import argparse
 import fcntl
 import importlib.util
 import json
+import os
 import sys
 import threading
 import types
@@ -467,7 +468,7 @@ def test_layout_lock_is_released_when_owning_file_descriptor_closes(
     assert lock_path.is_file()
 
 
-def test_discover_layouts_fails_fast_while_generation_holds_exclusive_lock(
+def test_discover_layouts_sees_nothing_until_atomic_publish_completes(
     preview_layout, tmp_path
 ):
     template_path = tmp_path / "template.json"
@@ -499,9 +500,7 @@ def test_discover_layouts_fails_fast_while_generation_holds_exclusive_lock(
     owner.start()
     assert generate_started.wait(timeout=2)
 
-    with pytest.raises(
-        preview_layout.PreviewError, match="generation already in progress"
-    ):
+    with pytest.raises(FileNotFoundError, match="No layouts"):
         preview_layout.discover_layouts(template_path, output_dir)
 
     allow_generate.set()
@@ -586,7 +585,7 @@ def test_generate_layouts_publish_failure_leaves_no_target_or_staging_directory(
             return True
 
     preview_layout.TaskGenerator = FakeTaskGenerator
-    def fail_publish(src, dst):
+    def fail_publish(old_dir_fd, old_name, new_dir_fd, new_name):
         raise preview_layout.PreviewError("injected publish failure")
 
     monkeypatch.setattr(preview_layout, "_rename_noreplace", fail_publish)
@@ -598,6 +597,73 @@ def test_generate_layouts_publish_failure_leaves_no_target_or_staging_directory(
     assert sorted(path.name for path in output_dir.iterdir()) == [
         ".demo.preview.lock"
     ]
+
+
+def test_generate_layouts_rejects_recreated_output_root_and_cleans_owned_staging(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path, episodes=1)
+    output_dir = tmp_path / "output"
+    moved_root = tmp_path / "moved-output"
+    generated_paths = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            pass
+
+        def generate(self, output_file):
+            generated_paths.append(output_file)
+            Path(output_file).write_text("generated", encoding="utf-8")
+            output_dir.rename(moved_root)
+            output_dir.mkdir()
+            (output_dir / "external.txt").write_text("external", encoding="utf-8")
+            return True
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    with pytest.raises(preview_layout.PreviewError, match="identity changed"):
+        preview_layout.generate_layouts(template_path, output_dir, None)
+
+    assert generated_paths[0].startswith("/proc/self/fd/")
+    assert sorted(path.name for path in moved_root.iterdir()) == [
+        ".demo.preview.lock"
+    ]
+    assert sorted(path.name for path in output_dir.iterdir()) == ["external.txt"]
+    assert not (moved_root / "demo").exists()
+    assert not (output_dir / "demo").exists()
+
+
+def test_generate_layouts_rejects_output_root_replaced_by_symlink_and_cleans_staging(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path, episodes=1)
+    output_dir = tmp_path / "output"
+    moved_root = tmp_path / "moved-output"
+    external = tmp_path / "external"
+    external.mkdir()
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            pass
+
+        def generate(self, output_file):
+            Path(output_file).write_text("generated", encoding="utf-8")
+            output_dir.rename(moved_root)
+            output_dir.symlink_to(external, target_is_directory=True)
+            return True
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    with pytest.raises(preview_layout.PreviewError, match="output root"):
+        preview_layout.generate_layouts(template_path, output_dir, None)
+
+    assert sorted(path.name for path in moved_root.iterdir()) == [
+        ".demo.preview.lock"
+    ]
+    assert list(external.iterdir()) == []
+    assert not (moved_root / "demo").exists()
 
 
 def test_generate_layouts_never_replaces_target_created_during_generation(
@@ -642,11 +708,44 @@ def test_rename_noreplace_preserves_source_and_existing_target(
     target.mkdir()
     (target / "keep.txt").write_text("keep", encoding="utf-8")
 
-    with pytest.raises(preview_layout.PreviewError, match="already exists"):
-        preview_layout._rename_noreplace(source, target)
+    root_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        with pytest.raises(preview_layout.PreviewError, match="already exists"):
+            preview_layout._rename_noreplace(
+                root_fd, source.name, root_fd, target.name
+            )
+    finally:
+        os.close(root_fd)
 
     assert (source / "new.json").read_text(encoding="utf-8") == "new"
     assert (target / "keep.txt").read_text(encoding="utf-8") == "keep"
+
+
+def test_rename_noreplace_passes_real_directory_fds_to_renameat2(
+    preview_layout, monkeypatch
+):
+    calls = []
+
+    class FakeRenameAt2:
+        argtypes = None
+        restype = None
+
+        def __call__(self, *args):
+            calls.append(args)
+            return 0
+
+    fake_renameat2 = FakeRenameAt2()
+    fake_libc = types.SimpleNamespace(renameat2=fake_renameat2)
+    monkeypatch.setattr(
+        preview_layout.ctypes, "CDLL", lambda *args, **kwargs: fake_libc
+    )
+
+    preview_layout._rename_noreplace(41, "staging", 42, "demo")
+
+    assert calls == [
+        (41, b"staging", 42, b"demo", 1),
+    ]
+    assert all(fd != -100 for fd in (calls[0][0], calls[0][2]))
 
 
 def test_discover_layouts_raises_when_no_layouts_exist(preview_layout, tmp_path):
@@ -726,6 +825,29 @@ def test_discover_layouts_sorts_existing_layouts(preview_layout, tmp_path):
         "demo_2.json",
         "demo_10.json",
     ]
+    assert not (tmp_path / "output" / ".demo.preview.lock").exists()
+
+
+def test_discover_layouts_supports_read_only_output_without_creating_lock(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path)
+    save_path = tmp_path / "output" / "demo"
+    save_path.mkdir(parents=True)
+    layout = save_path / "demo_0.json"
+    layout.write_text("{}", encoding="utf-8")
+    (tmp_path / "output").chmod(0o555)
+
+    try:
+        _, _, files = preview_layout.discover_layouts(
+            template_path, tmp_path / "output"
+        )
+    finally:
+        (tmp_path / "output").chmod(0o755)
+
+    assert files == [layout]
+    assert not (tmp_path / "output" / ".demo.preview.lock").exists()
 
 
 def test_select_files_matches_comma_separated_numeric_suffixes(preview_layout):
