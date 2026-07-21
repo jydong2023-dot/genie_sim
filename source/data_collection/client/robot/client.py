@@ -81,24 +81,32 @@ def find_urdf_in_robot_cfg(robot_urdf_name, project_root):
 
 # All rotation angles in the code are in degrees
 class RpcClient:
-    def __init__(self, client_host, robot_urdf=""):
-        for i in range(600):
+    def __init__(self, client_host, robot_urdf="", connect_timeout=None):
+        attempt_count = 600 if connect_timeout is None else 1
+        readiness_timeout = 5 if connect_timeout is None else connect_timeout
+        for i in range(attempt_count):
             try:
                 self.channel = grpc.insecure_channel(
                     client_host, options=[("grpc.max_receive_message_length", 16094304)]
                 )
-                grpc.channel_ready_future(self.channel).result(timeout=5)
+                grpc.channel_ready_future(self.channel).result(timeout=readiness_timeout)
                 self.robot_urdf = robot_urdf
                 # Find and store URDF path during initialization
                 self.urdf_path = find_urdf_in_robot_cfg(self.robot_urdf, project_root)
                 break
             except grpc.FutureTimeoutError as e:
                 logger.error(f"Failed to connect to gRPC server[{i}]: {e}")
+                if connect_timeout is not None:
+                    self.channel.close()
+                    raise
                 time.sleep(3)
                 if i >= 599:
                     raise e
             except grpc.RpcError as e:
                 logger.error(f"Failed to connect to gRPC server[{i}]: {e}")
+                if connect_timeout is not None:
+                    self.channel.close()
+                    raise
                 time.sleep(3)
                 if i >= 599:
                     raise e

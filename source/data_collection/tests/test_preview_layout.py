@@ -1,5 +1,6 @@
 import ast
 import argparse
+import builtins
 import fcntl
 import importlib.util
 import json
@@ -17,16 +18,6 @@ SCRIPT_PATH = Path(__file__).parents[1] / "scripts" / "preview_layout.py"
 
 @pytest.fixture
 def preview_layout(monkeypatch):
-    class StubTaskGenerator:
-        pass
-
-    client = types.ModuleType("client")
-    client.__path__ = []
-    layout = types.ModuleType("client.layout")
-    layout.__path__ = []
-    task_generate = types.ModuleType("client.layout.task_generate")
-    task_generate.TaskGenerator = StubTaskGenerator
-
     common = types.ModuleType("common")
     common.__path__ = []
     base_utils = types.ModuleType("common.base_utils")
@@ -38,9 +29,6 @@ def preview_layout(monkeypatch):
     )
 
     modules = {
-        "client": client,
-        "client.layout": layout,
-        "client.layout.task_generate": task_generate,
         "common": common,
         "common.base_utils": base_utils,
         "common.base_utils.logger": logger_module,
@@ -54,6 +42,24 @@ def preview_layout(monkeypatch):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_help_loads_when_task_generator_dependencies_are_unavailable(monkeypatch):
+    original_import = builtins.__import__
+
+    def reject_task_generator(name, *args, **kwargs):
+        if name == "client.layout.task_generate":
+            raise ImportError("shapely unavailable")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", reject_task_generator)
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT_PATH), "--help"])
+
+    module = preview_layout.__wrapped__(monkeypatch)
+
+    with pytest.raises(SystemExit) as exc_info:
+        module.parse_args()
+    assert exc_info.value.code == 0
 
 
 def test_preview_layout_fixture_restores_module_root_in_sys_path():
@@ -943,43 +949,59 @@ def test_parse_grpc_endpoint_rejects_invalid_endpoints(preview_layout, client_ho
         preview_layout.parse_grpc_endpoint(client_host)
 
 
-def test_require_server_connects_with_timeout_and_closes_socket(
+def test_require_server_waits_for_grpc_readiness_and_closes_channel(
     preview_layout, monkeypatch
 ):
     calls = []
 
-    class FakeConnection:
-        closed = False
+    class FakeChannel:
+        def close(self):
+            calls.append(("close",))
 
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc_value, traceback):
-            self.closed = True
-
-    connection = FakeConnection()
-
-    def fake_create_connection(endpoint, timeout):
-        calls.append((endpoint, timeout))
-        return connection
-
-    monkeypatch.setattr(
-        preview_layout.socket, "create_connection", fake_create_connection
+    channel = FakeChannel()
+    future = types.SimpleNamespace(
+        result=lambda timeout: calls.append(("ready", timeout))
     )
+    fake_grpc = types.SimpleNamespace(
+        FutureTimeoutError=type("FutureTimeoutError", (Exception,), {}),
+        RpcError=type("RpcError", (Exception,), {}),
+        insecure_channel=lambda endpoint: calls.append(("channel", endpoint)) or channel,
+        channel_ready_future=lambda actual_channel: (
+            calls.append(("future", actual_channel)) or future
+        ),
+    )
+    monkeypatch.setitem(sys.modules, "grpc", fake_grpc)
 
     preview_layout.require_server("[::1]:50051", 2.5)
 
-    assert calls == [(('::1', 50051), 2.5)]
-    assert connection.closed is True
+    assert calls == [
+        ("channel", "[::1]:50051"),
+        ("future", channel),
+        ("ready", 2.5),
+        ("close",),
+    ]
 
 
 def test_require_server_reports_how_to_start_server(preview_layout, monkeypatch):
-    def refuse_connection(endpoint, timeout):
-        raise ConnectionRefusedError("connection refused")
+    class FutureTimeoutError(Exception):
+        pass
 
-    monkeypatch.setattr(
-        preview_layout.socket, "create_connection", refuse_connection
+    class FakeChannel:
+        closed = False
+
+        def close(self):
+            self.closed = True
+
+    channel = FakeChannel()
+    fake_grpc = types.SimpleNamespace(
+        FutureTimeoutError=FutureTimeoutError,
+        RpcError=type("RpcError", (Exception,), {}),
+        insecure_channel=lambda endpoint: channel,
+        channel_ready_future=lambda actual_channel: types.SimpleNamespace(
+            result=lambda timeout: (_ for _ in ()).throw(FutureTimeoutError())
+        ),
     )
+    monkeypatch.setitem(sys.modules, "grpc", fake_grpc)
 
     with pytest.raises(preview_layout.PreviewError) as exc_info:
         preview_layout.require_server("localhost:50051", 5.0)
@@ -987,6 +1009,7 @@ def test_require_server_reports_how_to_start_server(preview_layout, monkeypatch)
     message = str(exc_info.value)
     assert "localhost:50051" in message
     assert "python scripts/data_collector_server.py --enable_physics" in message
+    assert channel.closed is True
 
 
 def test_require_server_converts_invalid_endpoint_to_preview_error(preview_layout):
@@ -1079,6 +1102,40 @@ def test_prepare_instance_file_without_rewrite_returns_source_and_creates_nothin
     assert not temporary_dir.exists()
 
 
+def test_build_robot_passes_connect_timeout_to_isaac_robot(
+    preview_layout, monkeypatch
+):
+    constructed = []
+
+    class FakeTaskGenerator:
+        robot_init_pose = {
+            "position": [0, 0, 0],
+            "quaternion": [1, 0, 0, 0],
+        }
+
+        def __init__(self, template):
+            pass
+
+    class FakeRobot:
+        def __init__(self, **kwargs):
+            constructed.append(kwargs)
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+    monkeypatch.setattr(
+        preview_layout,
+        "_import_isaac_client",
+        lambda: (None, FakeRobot, None, None),
+    )
+    template = {
+        "robot": {"robot_cfg": "robot.json"},
+        "scene": {"scene_usd": "scene.usd"},
+    }
+
+    preview_layout.build_robot(template, "localhost:50051", 0.75)
+
+    assert constructed[0]["connect_timeout"] == 0.75
+
+
 def install_preview_fakes(
     preview_layout,
     monkeypatch,
@@ -1088,6 +1145,14 @@ def install_preview_fakes(
     agent_init_error=None,
     channel_close_error=None,
 ):
+    monkeypatch.setitem(
+        sys.modules,
+        "grpc",
+        types.SimpleNamespace(
+            FutureTimeoutError=type("FutureTimeoutError", (Exception,), {}),
+            RpcError=type("RpcError", (Exception,), {}),
+        ),
+    )
     files = [tmp_path / "demo_0.json", tmp_path / "demo_1.json"]
     for path in files:
         path.write_text("{}", encoding="utf-8")
@@ -1118,10 +1183,11 @@ def install_preview_fakes(
     class FakeRobot:
         def __init__(self):
             self.client = FakeClient()
-            self.open_gripper_calls = []
 
-        def open_gripper(self, *, id, detach):
-            self.open_gripper_calls.append((id, detach))
+        def __getattr__(self, name):
+            if name == "open_gripper":
+                raise AssertionError("preview must not access open_gripper")
+            raise AttributeError(name)
 
     class FakeAgent:
         instances = []
@@ -1167,8 +1233,8 @@ def install_preview_fakes(
         lambda: (FakeAgent, None, None, None),
     )
 
-    def fake_build_robot(template, client_host):
-        build_calls.append((template, client_host))
+    def fake_build_robot(template, client_host, connect_timeout):
+        build_calls.append((template, client_host, connect_timeout))
         return robot
 
     def fake_prepare_instance_file(path, assets_root, rewrite_assets, temporary_dir):
@@ -1205,6 +1271,7 @@ def preview_kwargs(tmp_path, files, *, gui, save_images):
         "template": {"task": "demo"},
         "files": files,
         "client_host": "localhost:50051",
+        "connect_timeout": 1.5,
         "gui": gui,
         "save_images": save_images,
         "cameras": [("head", "/World/head_Camera")],
@@ -1232,7 +1299,7 @@ def test_preview_instances_gui_loads_layouts_without_collecting_trajectories(
         **preview_kwargs(tmp_path, fakes.files, gui=True, save_images=False)
     )
 
-    assert fakes.build_calls == [({"task": "demo"}, "localhost:50051")]
+    assert fakes.build_calls == [({"task": "demo"}, "localhost:50051", 1.5)]
     assert len(fakes.FakeAgent.instances) == 1
     assert fakes.agent_events == [
         ("construct", fakes.robot),
@@ -1262,18 +1329,17 @@ def test_preview_instances_without_gui_saves_each_layout_without_waiting_for_inp
 
     saved = []
     monkeypatch.setattr("builtins.input", unexpected_input)
-    monkeypatch.setattr(
-        preview_layout,
-        "save_preview_images",
-        lambda robot, cameras, preview_dir, stem: saved.append(
-            (robot, cameras, preview_dir, stem)
-        ),
-    )
+    def fake_save(robot, cameras, preview_dir, stem):
+        saved.append((robot, cameras, preview_dir, stem))
+        return {"head": str(preview_dir / "head.png")}
 
-    preview_layout.preview_instances(
+    monkeypatch.setattr(preview_layout, "save_preview_images", fake_save)
+
+    written_count = preview_layout.preview_instances(
         **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=True)
     )
 
+    assert written_count == 2
     assert [call[3] for call in saved] == ["demo_0", "demo_1"]
     assert all(
         call[:3]
@@ -1355,8 +1421,78 @@ def test_preview_instances_closes_channel_once_when_agent_construction_fails(
         )
 
     assert exc_info.value is agent_init_error
-    assert fakes.build_calls == [({"task": "demo"}, "localhost:50051")]
+    assert fakes.build_calls == [({"task": "demo"}, "localhost:50051", 1.5)]
     assert fakes.robot.client.channel.close_calls == 1
+
+
+def test_preview_instances_converts_grpc_robot_connection_error(
+    preview_layout, monkeypatch, tmp_path
+):
+    fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
+
+    class RpcError(Exception):
+        pass
+
+    fake_grpc = types.SimpleNamespace(
+        FutureTimeoutError=type("FutureTimeoutError", (Exception,), {}),
+        RpcError=RpcError,
+    )
+    monkeypatch.setitem(sys.modules, "grpc", fake_grpc)
+    connection_error = RpcError("server raced away")
+    monkeypatch.setattr(
+        preview_layout,
+        "build_robot",
+        lambda *args, **kwargs: (_ for _ in ()).throw(connection_error),
+    )
+
+    with pytest.raises(preview_layout.PreviewError) as exc_info:
+        preview_layout.preview_instances(
+            **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=False)
+        )
+
+    assert "localhost:50051" in str(exc_info.value)
+    assert "python scripts/data_collector_server.py --enable_physics" in str(
+        exc_info.value
+    )
+    assert exc_info.value.__cause__ is connection_error
+
+
+def test_preview_instances_preserves_non_connection_robot_error(
+    preview_layout, monkeypatch, tmp_path
+):
+    fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
+    programming_error = RuntimeError("bad template")
+    monkeypatch.setattr(
+        preview_layout,
+        "build_robot",
+        lambda *args, **kwargs: (_ for _ in ()).throw(programming_error),
+    )
+
+    with pytest.raises(RuntimeError, match="bad template") as exc_info:
+        preview_layout.preview_instances(
+            **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=False)
+        )
+
+    assert exc_info.value is programming_error
+
+
+def test_preview_instances_preserves_robot_file_not_found_error(
+    preview_layout, monkeypatch, tmp_path
+):
+    fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
+    file_error = FileNotFoundError("missing robot config")
+    monkeypatch.setattr(
+        preview_layout,
+        "build_robot",
+        lambda *args, **kwargs: (_ for _ in ()).throw(file_error),
+    )
+
+    with pytest.raises(FileNotFoundError, match="missing robot config") as exc_info:
+        preview_layout.preview_instances(
+            **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=False)
+        )
+
+    assert exc_info.value is file_error
 
 
 def test_preview_instances_ignores_channel_close_error_after_success(
@@ -1434,6 +1570,7 @@ def test_preview_instances_has_no_trajectory_collection_calls():
             "move_pose",
             "moveto",
             "set_joint_positions",
+            "open_gripper",
             "exit",
         }
     )
@@ -1495,12 +1632,17 @@ def test_main_requires_server_before_importing_or_building_robot(
     monkeypatch.setattr(
         preview_layout,
         "build_robot",
-        lambda template, client_host: calls.append(("build",)),
+        lambda template, client_host, connect_timeout: calls.append(
+            ("build", client_host, connect_timeout)
+        ),
     )
 
     def fake_preview_instances(*args, **kwargs):
         preview_layout._import_isaac_client()
-        preview_layout.build_robot({}, "localhost:50051")
+        preview_layout.build_robot(
+            {}, kwargs["client_host"], kwargs["connect_timeout"]
+        )
+        return 0
 
     monkeypatch.setattr(preview_layout, "preview_instances", fake_preview_instances)
 
@@ -1508,7 +1650,7 @@ def test_main_requires_server_before_importing_or_building_robot(
     assert calls == [
         ("require", "localhost:50051", 1.5),
         ("import",),
-        ("build",),
+        ("build", "localhost:50051", 1.5),
     ]
 
 
@@ -1566,6 +1708,62 @@ def test_save_preview_images_reports_missing_cv2_as_preview_error(
 
     with pytest.raises(preview_layout.PreviewError, match="opencv-python"):
         preview_layout.save_preview_images(object(), [], tmp_path, "demo_0")
+
+
+def test_save_preview_images_rejects_failed_imwrite(
+    preview_layout, monkeypatch, tmp_path
+):
+    image = object()
+    fake_cv2 = types.SimpleNamespace(
+        COLOR_RGB2BGR=1,
+        cvtColor=lambda actual, code: actual,
+        imwrite=lambda path, actual: False,
+    )
+    monkeypatch.setitem(sys.modules, "cv2", fake_cv2)
+    monkeypatch.setattr(preview_layout, "capture_cameras", lambda robot, prims: [image])
+
+    with pytest.raises(preview_layout.PreviewError, match="Failed to write"):
+        preview_layout.save_preview_images(
+            object(), [("head", "/World/head")], tmp_path, "demo_0"
+        )
+
+
+@pytest.mark.parametrize(("headless", "save_images"), [(True, False), (False, True)])
+def test_main_rejects_image_modes_without_resolved_cameras(
+    preview_layout, monkeypatch, tmp_path, headless, save_images
+):
+    args = make_main_args(tmp_path, layout_only=False)
+    args.headless = headless
+    args.save_images = save_images
+    configure_main_dependencies(preview_layout, monkeypatch, tmp_path, args)
+    monkeypatch.setattr(preview_layout, "require_server", lambda *args: None)
+    monkeypatch.setattr(preview_layout, "resolve_camera_prims", lambda *args: [])
+    monkeypatch.setattr(
+        preview_layout,
+        "preview_instances",
+        lambda *args, **kwargs: pytest.fail("preview must not start without cameras"),
+    )
+
+    with pytest.raises(preview_layout.PreviewError, match="No cameras resolved"):
+        preview_layout.main()
+
+
+def test_main_only_prints_preview_directory_after_an_image_is_written(
+    preview_layout, monkeypatch, tmp_path, capsys
+):
+    args = make_main_args(tmp_path, layout_only=False)
+    args.headless = True
+    configure_main_dependencies(preview_layout, monkeypatch, tmp_path, args)
+    monkeypatch.setattr(preview_layout, "require_server", lambda *args: None)
+    monkeypatch.setattr(
+        preview_layout,
+        "resolve_camera_prims",
+        lambda *args: [("head", "/World/head")],
+    )
+    monkeypatch.setattr(preview_layout, "preview_instances", lambda *args, **kwargs: 0)
+
+    assert preview_layout.main() == 0
+    assert "Preview images:" not in capsys.readouterr().out
 
 
 def test_run_cli_reports_expected_errors_without_traceback(

@@ -195,12 +195,17 @@ python scripts/preview_layout.py --gui \
 Only `--enable_physics` is needed on the server: this path does not collect
 trajectories, record data, use cuRobo, or require a ROS publisher. The preview
 script does not manage the server, Isaac Sim, or Docker lifecycle. Its control
-flow is `TaskGenerator.generate_tasks()` → gRPC `reset()` /
-`generate_layout()` → wait for inspection in the Isaac GUI; it never calls
-`agent.run()`, `start_recording()`, or the trajectory planner.
+flow calls `TaskGenerator.generate()` once per episode, atomically publishes
+the completed task directory, then uses gRPC `reset()` / `generate_layout()`
+and waits for inspection in the Isaac GUI. The target task directory must not
+already exist; use `--skip-generate` to reuse it or choose a new
+`--output-dir`. It never calls `agent.run()`, `start_recording()`, or the
+trajectory planner.
 
 The default gRPC endpoint is `localhost:50051`. A missing server fails fast
 after the connection timeout and reports the exact `--enable_physics` command.
+`--connect-timeout` bounds both the gRPC readiness preflight and the actual
+`RpcClient` connection used to construct the robot.
 `preview_layout.py` accepts the complete CLI surface below:
 
 | Flag | Effect |
@@ -211,7 +216,7 @@ after the connection timeout and reports the exact `--enable_physics` command.
 | `--skip-generate` | Reuse existing layouts under `output-dir/<task>/`. |
 | `--instance-ids IDS` | Preview only comma-separated generated indices, for example `0,2`. |
 | `--client-host HOST:PORT` | gRPC endpoint (default `localhost:50051`). |
-| `--connect-timeout SECONDS` | Positive server connection timeout (default 5 seconds). |
+| `--connect-timeout SECONDS` | Positive timeout for gRPC readiness and the actual `RpcClient` connection (default 5 seconds). |
 | `--layout-only` | Generate/reuse layouts without connecting to Isaac. |
 | `--gui` | Wait for Enter between layouts in the Isaac window; this is the default mode unless `--headless` or `--layout-only` is set. |
 | `--headless` | Load each scene without waiting and save resolved camera images. |

@@ -13,17 +13,17 @@ Examples
 # Layout only (no Isaac)
 python scripts/preview_layout.py --layout-only \\
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \\
-  --output-dir /home/user/djy/genie_sim/output
+  --output-dir /path/to/genie_sim/output
 
 # GUI preview (Isaac window stays open; press Enter between instances)
 python scripts/preview_layout.py --gui \\
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \\
-  --output-dir /home/user/djy/genie_sim/output --num-episodes 2
+  --output-dir /path/to/genie_sim/output --num-episodes 2
 
 # Headless: load + save camera PNGs
 python scripts/preview_layout.py --headless --save-images \\
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \\
-  --output-dir /home/user/djy/genie_sim/output --num-episodes 2
+  --output-dir /path/to/genie_sim/output --num-episodes 2
 """
 
 from __future__ import annotations
@@ -38,7 +38,6 @@ import math
 import os
 import re
 import secrets
-import socket
 import stat
 import sys
 import tempfile
@@ -53,8 +52,19 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from client.layout.task_generate import TaskGenerator
 from common.base_utils.logger import logger
+
+
+TaskGenerator = None
+
+
+def _get_task_generator_class():
+    global TaskGenerator
+    if TaskGenerator is None:
+        from client.layout.task_generate import TaskGenerator as task_generator_class
+
+        TaskGenerator = task_generator_class
+    return TaskGenerator
 
 
 def _import_isaac_client():
@@ -132,17 +142,23 @@ def parse_grpc_endpoint(client_host: str) -> tuple[str, int]:
 
 def require_server(client_host: str, timeout: float) -> None:
     try:
-        endpoint = parse_grpc_endpoint(client_host)
+        parse_grpc_endpoint(client_host)
     except ValueError as exc:
         raise PreviewError(str(exc)) from exc
+    import grpc
+
+    channel = None
     try:
-        with socket.create_connection(endpoint, timeout=timeout):
-            pass
-    except OSError as exc:
+        channel = grpc.insecure_channel(client_host)
+        grpc.channel_ready_future(channel).result(timeout=timeout)
+    except (grpc.FutureTimeoutError, grpc.RpcError, OSError) as exc:
         raise PreviewError(
             f"Cannot connect to preview server at {client_host}. Start it with: "
             "python scripts/data_collector_server.py --enable_physics"
         ) from exc
+    finally:
+        if channel is not None:
+            channel.close()
 
 
 def parse_args() -> argparse.Namespace:
@@ -458,7 +474,7 @@ def generate_layouts(
                 )
 
             logger.info(f"Generating {num_episodes} layouts -> {save_path}")
-            tg = TaskGenerator(copy.deepcopy(task_info))
+            tg = _get_task_generator_class()(copy.deepcopy(task_info))
             with staging_directory(root_fd, task_name) as (staging_name, staging_fd):
                 task_fd_path = Path(f"/proc/self/fd/{staging_fd}") / task_name
                 for episode_id in range(num_episodes):
@@ -598,15 +614,16 @@ def save_preview_images(
             name = f"{alias}.png" if int(idx) == 0 else f"{alias}_{int(idx):02d}.png"
         path = out_dir / name
         bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(str(path), bgr)
+        if not cv2.imwrite(str(path), bgr):
+            raise PreviewError(f"Failed to write preview image: {path}")
         written[alias] = str(path)
         logger.info(f"Saved {path}")
     return written
 
 
-def build_robot(template: dict, client_host: str):
+def build_robot(template: dict, client_host: str, connect_timeout: float):
     _, IsaacSimRpcRobot, _, _ = _import_isaac_client()
-    tg = TaskGenerator(template)
+    tg = _get_task_generator_class()(template)
     robot_position = tg.robot_init_pose["position"]
     robot_rotation = tg.robot_init_pose["quaternion"]
     stand = {"stand_type": "cylinder", "stand_size_x": 0.1, "stand_size_y": 0.1}
@@ -622,6 +639,7 @@ def build_robot(template: dict, client_host: str):
         robot_cfg=robot_cfg,
         scene_usd=scene_usd,
         client_host=client_host,
+        connect_timeout=connect_timeout,
         position=robot_position,
         rotation=robot_rotation,
         stand_type=stand["stand_type"],
@@ -655,17 +673,27 @@ def preview_instances(
     files: list[Path],
     *,
     client_host: str,
+    connect_timeout: float,
     gui: bool,
     save_images: bool,
     cameras: list[tuple[str, str]],
     preview_dir: Path,
     assets_root: Path,
     rewrite_assets: bool,
-) -> None:
+) -> int:
     DataCollectionAgent, _, _, _ = _import_isaac_client()
-    logger.info(f"Connecting to Isaac server at {client_host}")
-    robot = build_robot(template, client_host)
+    import grpc
 
+    logger.info(f"Connecting to Isaac server at {client_host}")
+    try:
+        robot = build_robot(template, client_host, connect_timeout)
+    except (grpc.FutureTimeoutError, grpc.RpcError) as exc:
+        raise PreviewError(
+            f"Cannot connect to preview server at {client_host}. Start it with: "
+            "python scripts/data_collector_server.py --enable_physics"
+        ) from exc
+
+    written_count = 0
     try:
         with tempfile.TemporaryDirectory(prefix="geniesim-preview-") as temp_dir:
             temporary_dir = Path(temp_dir)
@@ -678,15 +706,12 @@ def preview_instances(
                 agent.reset()
                 time.sleep(0.5)
                 agent.generate_layout(str(load_path))
-                try:
-                    robot.open_gripper(id="right", detach=False)
-                    robot.open_gripper(id="left", detach=False)
-                except Exception as e:
-                    logger.warning(f"open_gripper skipped: {e}")
                 time.sleep(1.0)
 
                 if save_images and cameras:
-                    save_preview_images(robot, cameras, preview_dir, path.stem)
+                    written_count += len(
+                        save_preview_images(robot, cameras, preview_dir, path.stem)
+                    )
 
                 if gui:
                     print(
@@ -701,6 +726,7 @@ def preview_instances(
                         break
                 else:
                     logger.info(f"Headless preview done for {path.name}")
+        return written_count
     finally:
         try:
             channel = getattr(robot.client, "channel", None)
@@ -740,14 +766,15 @@ def main() -> int:
     require_server(args.client_host, args.connect_timeout)
 
     cameras = resolve_camera_prims(template, args.cameras)
-    if args.save_images and not cameras:
-        logger.warning("No cameras resolved from template; --save-images will be skipped")
+    if (args.headless or args.save_images) and not cameras:
+        raise PreviewError("No cameras resolved from template for image preview")
 
     preview_dir = save_path / "preview"
-    preview_instances(
+    written_count = preview_instances(
         template,
         files,
         client_host=args.client_host,
+        connect_timeout=args.connect_timeout,
         gui=bool(args.gui and not args.headless),
         save_images=args.save_images or args.headless,
         cameras=cameras,
@@ -756,7 +783,7 @@ def main() -> int:
         rewrite_assets=not args.keep_absolute_assets,
     )
     print(f"Done. Layouts: {save_path}")
-    if args.save_images or args.headless:
+    if written_count:
         print(f"Preview images: {preview_dir}")
     return 0
 

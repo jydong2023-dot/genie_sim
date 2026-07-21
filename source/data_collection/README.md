@@ -283,14 +283,17 @@ python scripts/preview_layout.py --gui \
   --num-episodes 2
 ```
 
-The script calls `TaskGenerator.generate_tasks()`, then uses gRPC `reset()` and
-`generate_layout()` to load each generated scene, and waits while you inspect
-the Isaac Sim window. It never calls `agent.run()` or `start_recording()`, and
-does not execute trajectory planning.
+The script calls `TaskGenerator.generate()` once per episode, publishes the
+completed task directory atomically, then uses gRPC `reset()` and
+`generate_layout()` to load each generated scene. The target task directory
+must not already exist; use `--skip-generate` to reuse it or choose a new
+`--output-dir`. It never calls `agent.run()` or `start_recording()`, and does
+not execute trajectory planning.
 
 The default server endpoint is `localhost:50051`. If it is unavailable, the
 script fails fast after `--connect-timeout` (default: 5 seconds) and prints the
-server command above. Useful variants:
+server command above. The timeout covers both the gRPC readiness preflight and
+the actual `RpcClient` connection used to construct the robot. Useful variants:
 
 - `--layout-only` generates layouts without connecting to Isaac Sim.
 - `--skip-generate` reuses layouts already under the task's output directory.
