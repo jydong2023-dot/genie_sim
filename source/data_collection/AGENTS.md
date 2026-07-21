@@ -153,6 +153,7 @@ tasks/<collection>/<task>/<robot>/<name>.json
 |---|---|
 | Task templates | [`tasks/geniesim_2025/<task>/<g1\|g2>/*.json`](tasks/) |
 | Server / client entries | [`scripts/data_collector_server.py`](scripts/), [`scripts/run_data_collection.py`](scripts/) |
+| Layout-only preview (no trajectory) | [`scripts/preview_layout.py`](scripts/preview_layout.py) · design: [`docs/superpowers/specs/2026-07-21-layout-preview-design.md`](docs/superpowers/specs/2026-07-21-layout-preview-design.md) |
 | Orchestrators | [`scripts/run_data_collection.sh`](scripts/) (one-shot), [`scripts/start_gui.sh`](scripts/) (interactive), [`scripts/*entrypoint*.sh`](scripts/) |
 | Robot / cuRobo configs | [`config/robot_cfg/{G1,G2}*.json`](config/), [`config/curobo/configs/`](config/curobo/) |
 | aimdk protocol | [`common/aimdk/protocol/`](common/aimdk/) |

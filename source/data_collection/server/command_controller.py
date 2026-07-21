@@ -1003,7 +1003,8 @@ class CommandController:
                     self.process = []
                 self.data_to_send = "Stopped"
         else:
-            raise ValueError("Invalid command: GetObservation is not supported")
+            # One-shot observation for layout preview (no recording).
+            self.data_to_send = self._capture_oneshot_observation()
 
     def handle_reset(self):
         """Handle Command 12: Reset"""
@@ -1376,6 +1377,59 @@ class CommandController:
     def _get_observation(self):
         for camera in self.cameras:
             self._capture_camera(prim_path=camera, isRGB=True, isDepth=True, isSemantic=True, isGN=False)
+
+    def _capture_oneshot_observation(self):
+        """Return a GetObservation payload without starting ROS recording."""
+        result = {
+            "camera": [],
+            "object": [],
+            "joint": {},
+            "gripper": {
+                "left": (np.zeros(3), np.array([1.0, 0.0, 0.0, 0.0])),
+                "right": (np.zeros(3), np.array([1.0, 0.0, 0.0, 0.0])),
+            },
+        }
+        if not self.data.get("isCam"):
+            return result
+
+        world = getattr(self.ui_builder, "my_world", None)
+        for prim_path in self.data.get("camera_prim_list", []):
+            resolution = self.cameras.get(prim_path, [1280, 720])
+            if prim_path not in self.cameras:
+                self.cameras[prim_path] = resolution
+                self.ui_builder.cameras[prim_path] = resolution
+            cam = Camera(prim_path=prim_path, resolution=resolution)
+            cam.initialize()
+            if world is not None:
+                for _ in range(8):
+                    world.step(render=True)
+            rgba = cam.get_rgba()
+            rgb = None
+            if rgba is not None:
+                rgb = np.asarray(rgba)[..., :3].astype(np.uint8)
+            width, height = resolution
+            if rgb is not None and rgb.ndim == 3:
+                height, width = rgb.shape[:2]
+            focal_length = cam.get_focal_length()
+            horizontal_aperture = cam.get_horizontal_aperture()
+            fx = width * focal_length / horizontal_aperture if horizontal_aperture else width
+            fy = height * focal_length / horizontal_aperture if horizontal_aperture else height
+            result["camera"].append(
+                {
+                    "camera_info": {
+                        "width": int(width),
+                        "height": int(height),
+                        "ppx": width * 0.5,
+                        "ppy": height * 0.5,
+                        "fx": float(fx),
+                        "fy": float(fy),
+                    },
+                    "rgb": rgb,
+                    "depth": None,
+                    "semantic": None,
+                }
+            )
+        return result
 
     def _on_reset(self):
         self._reset_stiffness()
