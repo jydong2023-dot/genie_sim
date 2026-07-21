@@ -160,22 +160,31 @@ def test_rewrite_asset_paths_relative_only_rewrites_internal_string_paths(
             {
                 "data_info_dir": str(internal_dir),
                 "obj_path": str(internal_dir / "apple.usd"),
-                "model_path": str(external_path),
-                "original_model_path": 42,
+                "model_path": str(assets_root / "models" / "apple.usd"),
+                "original_model_path": str(assets_root / "source" / "apple.obj"),
+            },
+            {
+                "data_info_dir": str(external_path),
+                "obj_path": 42,
+                "model_path": None,
                 "untouched": "value",
             },
-            {"data_info_dir": None},
         ]
     }
 
     result = preview_layout.rewrite_asset_paths_relative(task_info, assets_root)
 
     assert result is task_info
-    assert task_info["objects"][0] == {
-        "data_info_dir": str(Path("objects") / "apple"),
-        "obj_path": str(Path("objects") / "apple" / "apple.usd"),
-        "model_path": str(external_path),
-        "original_model_path": 42,
-        "untouched": "value",
-    }
-    assert task_info["objects"][1] == {"data_info_dir": None}
+    internal_object = task_info["objects"][0]
+    assert internal_object["data_info_dir"] == str(Path("objects") / "apple")
+    assert internal_object["obj_path"] == str(
+        Path("objects") / "apple" / "apple.usd"
+    )
+    assert internal_object["model_path"] == str(Path("models") / "apple.usd")
+    assert internal_object["original_model_path"] == str(Path("source") / "apple.obj")
+    external_object = task_info["objects"][1]
+    assert external_object["data_info_dir"] == str(external_path)
+    assert external_object["obj_path"] == 42
+    assert external_object["model_path"] is None
+    assert "original_model_path" not in external_object
+    assert external_object["untouched"] == "value"
