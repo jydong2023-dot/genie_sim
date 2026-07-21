@@ -133,7 +133,8 @@ If unset (or pointing somewhere bogus), compose fails fast with a clear message
   `/file-agent` (`save_file`). Check a route is live:
   `curl -s localhost:8765/assets-agent/openapi.json | python3 -m json.tool | grep paths`
   — non-empty `paths` means `assets-agent` registered.
-- Open WebUI is on host networking (`WEBUI_AUTH=False`) — open it in a browser
+- Open WebUI is on host networking (`WEBUI_AUTH=False`) at
+  `http://localhost:3000` — open it in a browser
   and import the configs from `config/` (see `generate-scene` skill).
 
 ## vl troubleshooting (read before first launch)

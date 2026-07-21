@@ -103,12 +103,12 @@ python src/geniesim_generator/server/mcp_assets_server.py
 python src/geniesim_generator/server/mcp_assets_info.py
 python src/geniesim_generator/server/mcp_file_server.py
 
-# Full stack: MCP gateway (:8765) + Open WebUI, via Docker — pick ONE embedding profile (see §6)
+# Full stack: MCP gateway (:8765) + Open WebUI (:3000), via Docker — pick ONE embedding profile (see §6)
 # Prereq: pip install geniesim_assets on host, then derive GENIESIM_ASSETS_DIR
 # from the running Python so compose can mount the host's installed copy.
 export GENIESIM_ASSETS_DIR=$(python -c \
     "import geniesim_assets, os; print(os.path.dirname(geniesim_assets.__file__))")
-docker compose --profile text up --build   # Qwen embedding API (no GPU; needs API key)
+docker compose --profile text up --build   # OpenAI embedding API (no GPU; needs API key)
 docker compose --profile vl   up --build   # Qwen3-VL embedding (local GPU + NVIDIA Container Toolkit)
 ```
 

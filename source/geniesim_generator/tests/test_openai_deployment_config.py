@@ -27,9 +27,22 @@ class OpenAIDeploymentConfigTest(unittest.TestCase):
         self.assertIn(
             "OPENAI_API_BASE_URL=https://api.openai.com/v1", webui_env
         )
+        self.assertIn("RAG_EMBEDDING_ENGINE=openai", webui_env)
+        self.assertIn(
+            "RAG_EMBEDDING_MODEL=text-embedding-3-small", webui_env
+        )
+        self.assertIn(
+            "RAG_OPENAI_API_KEY=${OPENAI_API_KEY:?set OPENAI_API_KEY}",
+            webui_env,
+        )
+        self.assertIn(
+            "RAG_OPENAI_API_BASE_URL=https://api.openai.com/v1", webui_env
+        )
+        self.assertIn("PORT=3000", webui_env)
         self.assertEqual(
             webui["image"], "ghcr.io/open-webui/open-webui:main-slim"
         )
+        self.assertIn(".:/geniesim/generator", webui["volumes"])
 
     def test_exports_target_openai_without_embedding_a_secret(self):
         workspace = json.loads(
@@ -46,6 +59,7 @@ class OpenAIDeploymentConfigTest(unittest.TestCase):
             ["https://api.openai.com/v1"],
         )
         self.assertEqual(model["base_model_id"], "gpt-5.6-sol")
+        self.assertEqual(model["params"]["reasoning_effort"], "none")
         self.assertNotIn("sk-", json.dumps(workspace))
 
 
