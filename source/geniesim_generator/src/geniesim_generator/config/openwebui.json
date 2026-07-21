@@ -17,7 +17,7 @@
   },
   "openai": {
     "api_base_urls": [
-      "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      "https://api.openai.com/v1"
     ],
     "api_configs": {
       "0": {
