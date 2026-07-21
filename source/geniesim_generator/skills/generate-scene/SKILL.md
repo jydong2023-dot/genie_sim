@@ -158,6 +158,16 @@ cd source/geniesim_generator/src/geniesim_generator
 PYTHONPATH=../.. python app.py --scene_id <my_scene>
 ```
 
+Normally the compiler discovers assets from the installed `geniesim_assets`
+package and discovers the output from an installed `geniesim_benchmark` or the
+sibling source checkout. Set these optional overrides when a deployment uses a
+different layout; both paths must already exist:
+
+```bash
+export GENIESIM_ASSETS_DIR=/path/to/geniesim_assets
+export GENIESIM_GENERATOR_OUTPUT_DIR=/path/to/benchmark/config/llm_task
+```
+
 Flags:
 
 | Flag | Effect |
@@ -170,6 +180,10 @@ Outputs land in `benchmark/config/llm_task/<scene_id>/<n>/` (`<n>` auto-incremen
 per run): `scene.usda`, `scene_info.json`, `graph.dot`, `graph.svg`, and a
 snapshot of the `LLM_RESULT.py` that produced it. On success it prints
 `step3: save scene to <path>...`.
+
+If neither benchmark package nor sibling checkout is available, set
+`GENIESIM_GENERATOR_OUTPUT_DIR`; the compiler fails with a configuration error
+rather than writing into a generator-local `src/benchmark` directory.
 
 ### Step 3 — Preview live in Isaac Sim (optional)
 

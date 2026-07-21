@@ -5,24 +5,23 @@
 from pxr import Usd, UsdGeom, Gf, Sdf, UsdUtils, UsdPhysics
 from typing import NamedTuple, Any, Callable, Literal
 import os
+from pathlib import Path
 from pprint import pprint
 
-current_path = os.path.abspath(__file__)
-GENIESIM_PATH = os.path.dirname(os.path.dirname(os.path.dirname(current_path)))
-ASSETS_PATH = os.path.join(GENIESIM_PATH, "assets")
+from geniesim_generator.paths import resolve_asset_path
 
 
 def load_scene(scene_path: str) -> Usd.Stage:
-    abs_scene_path = os.path.join(ASSETS_PATH, scene_path)
-    if scene_path and os.path.exists(abs_scene_path):
-        print(f"loading scene: {abs_scene_path}")
+    resolved_scene_path = Path(scene_path).expanduser().resolve()
+    if resolved_scene_path.is_file():
+        print(f"loading scene: {resolved_scene_path}")
         # usd_context = Usd.Stage.CreateNew("s.usda")
-        usd_context = Usd.Stage.Open(abs_scene_path)  # , load=Usd.Stage.LoadNone
+        usd_context = Usd.Stage.Open(str(resolved_scene_path))  # , load=Usd.Stage.LoadNone
         print("loaded")
     else:
-        print(f"file not exist {abs_scene_path}, creating new")
+        print(f"file not exist {resolved_scene_path}, creating new")
         # usd_context = Usd.Stage.CreateInMemory()
-        usd_context = Usd.Stage.CreateNew(scene_path)
+        usd_context = Usd.Stage.CreateNew(str(resolved_scene_path))
 
     return usd_context
 
@@ -37,10 +36,7 @@ def add_objects_to_stage(stage: Usd.Stage, object_info_list: list[dict]) -> Usd.
 
     for object_info in object_info_list:
         object_name = object_info["id"]
-        object_path = os.path.join(ASSETS_PATH, object_info["url"])
-        object_type = object_info.get("type", "unknown")
-        object_scale = object_info["scale"]
-        object_quat = object_info["rotation"]
+        object_path = resolve_asset_path(object_info["url"])
         object_trans = object_info["translation"]
 
         print(f"Adding object: {object_name} at {object_trans}")
@@ -49,7 +45,9 @@ def add_objects_to_stage(stage: Usd.Stage, object_info_list: list[dict]) -> Usd.
 
         xform = stage.DefinePrim(prim_path, object_name)
 
-        ok = xform.GetPrim().GetPayloads().AddPayload(os.path.join(".", "assets", object_info["url"]))
+        stage_path = Path(stage.GetRootLayer().realPath).resolve()
+        relative_path = os.path.relpath(object_path, stage_path.parent)
+        ok = xform.GetPrim().GetPayloads().AddPayload(relative_path)
         print("xform.GetPrim().GetPayloads().AddPayload(object_path)", object_path, ok)
         print(f"Added ref: {object_path}  ->  {prim_path}")
 
@@ -57,15 +55,15 @@ def add_objects_to_stage(stage: Usd.Stage, object_info_list: list[dict]) -> Usd.
 
 
 def dump_scene(stage: Usd.Stage, output_path: str) -> str:
-    abs_output_path = os.path.join(ASSETS_PATH, output_path)
+    resolved_output_path = Path(output_path).expanduser().resolve()
 
-    output_dir = os.path.dirname(abs_output_path)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
+    output_dir = resolved_output_path.parent
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=True)
         print(f"Creating output directory: {output_dir}")
 
-    stage.Export(output_path, args={"exportReferences": "false"})
-    return output_path
+    stage.Export(str(resolved_output_path), args={"exportReferences": "false"})
+    return str(resolved_output_path)
 
 
 import numpy as np
@@ -91,6 +89,10 @@ def quaternion_to_euler(q):
 
 
 def gen_scene_usda(scene_path: str, object_info_list: list[dict]):
+    resolved_objects = [
+        (object_info, resolve_asset_path(object_info["url"])) for object_info in object_info_list
+    ]
+
     print(f"\nstep1: load scene...")
     stage = load_scene(scene_path)
     print("✅ scene loaded")
@@ -102,10 +104,9 @@ def gen_scene_usda(scene_path: str, object_info_list: list[dict]):
     prim_sdf_path_list = []
 
     print(f"\nstep2: add objects to scene...")
-    for object_info in object_info_list:
+    scene_parent = Path(scene_path).expanduser().resolve().parent
+    for object_info, object_path in resolved_objects:
         object_name = object_info["id"]
-        object_path = os.path.join(ASSETS_PATH, object_info["url"])
-        object_type = object_info.get("type", "unknown")
         object_scale = object_info["scale"]
         object_quat = object_info["rotation"]
         object_trans = object_info["translation"]
@@ -113,7 +114,7 @@ def gen_scene_usda(scene_path: str, object_info_list: list[dict]):
         prim_path = Sdf.Path(f"/World/Objects/{object_name}")
         prim_sdf_path_list.append(f"{prim_path}")
 
-        relative_path = os.path.relpath(object_path, os.path.dirname(scene_path))
+        relative_path = os.path.relpath(object_path, scene_parent)
 
         xform = UsdGeom.Xform.Define(stage, prim_path)
         xform.ClearXformOpOrder()
@@ -146,7 +147,7 @@ def gen_scene_usda(scene_path: str, object_info_list: list[dict]):
         # print(f"  -> scale: {object_scale}")
 
         # Remove rigidbody for benchmark_hanger objects
-        if "benchmark_hanger" in object_path:
+        if "benchmark_hanger" in str(object_path):
             print(f"  -> Detected benchmark_hanger, removing rigidbody...")
             for child_prim in Usd.PrimRange(prim):
                 if child_prim.HasAPI(UsdPhysics.RigidBodyAPI):
