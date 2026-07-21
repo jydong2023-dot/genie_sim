@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import socket
 import sys
@@ -67,12 +68,16 @@ CAMERA_ALIAS = {
 }
 
 
+class PreviewError(Exception):
+    """Expected preview CLI error that can be shown without a traceback."""
+
+
 def positive_float(value: str) -> float:
     try:
         parsed = float(value)
     except ValueError as exc:
         raise argparse.ArgumentTypeError(f"expected a positive number: {value}") from exc
-    if parsed <= 0:
+    if not math.isfinite(parsed) or parsed <= 0:
         raise argparse.ArgumentTypeError(f"expected a positive number: {value}")
     return parsed
 
@@ -84,18 +89,34 @@ def parse_grpc_endpoint(client_host: str) -> tuple[str, int]:
         port = parsed.port
     except ValueError as exc:
         raise ValueError(error) from exc
-    if not parsed.hostname or port is None or not 1 <= port <= 65535:
+    invalid_components = (
+        parsed.username is not None
+        or parsed.password is not None
+        or bool(parsed.path)
+        or bool(parsed.query)
+        or bool(parsed.fragment)
+    )
+    if (
+        any(char.isspace() for char in client_host)
+        or invalid_components
+        or not parsed.hostname
+        or port is None
+        or not 1 <= port <= 65535
+    ):
         raise ValueError(error)
     return parsed.hostname, port
 
 
 def require_server(client_host: str, timeout: float) -> None:
-    endpoint = parse_grpc_endpoint(client_host)
+    try:
+        endpoint = parse_grpc_endpoint(client_host)
+    except ValueError as exc:
+        raise PreviewError(str(exc)) from exc
     try:
         with socket.create_connection(endpoint, timeout=timeout):
             pass
     except OSError as exc:
-        raise RuntimeError(
+        raise PreviewError(
             f"Cannot connect to preview server at {client_host}. Start it with: "
             "python scripts/data_collector_server.py --enable_physics"
         ) from exc
@@ -157,14 +178,14 @@ def ensure_sim_assets() -> Path:
 
             root = os.path.dirname(geniesim_assets.__file__)
             os.environ["SIM_ASSETS"] = root
-        except Exception as e:
-            raise RuntimeError(
+        except ImportError as e:
+            raise PreviewError(
                 "SIM_ASSETS is unset and geniesim_assets is not importable. "
                 "export SIM_ASSETS=/path/to/geniesim_assets or pip install -e geniesim_assets"
             ) from e
     path = Path(root).resolve()
     if not path.is_dir():
-        raise RuntimeError(f"SIM_ASSETS does not exist: {path}")
+        raise PreviewError(f"SIM_ASSETS does not exist: {path}")
     return path
 
 
@@ -283,7 +304,7 @@ def save_preview_images(
     try:
         import cv2
     except ImportError as e:
-        raise RuntimeError("opencv-python (cv2) is required for --save-images") from e
+        raise PreviewError("opencv-python (cv2) is required for --save-images") from e
 
     out_dir.mkdir(parents=True, exist_ok=True)
     prims = [p for _, p in cameras]
@@ -416,7 +437,10 @@ def main() -> int:
     else:
         template, save_path, files = generate_layouts(template_path, output_dir, args.num_episodes)
 
-    files = select_files(files, args.instance_ids)
+    try:
+        files = select_files(files, args.instance_ids)
+    except ValueError as exc:
+        raise PreviewError(str(exc)) from exc
     logger.info(f"Layouts ({len(files)}): {[p.name for p in files]}")
 
     if args.layout_only:
@@ -453,7 +477,7 @@ def run_cli() -> None:
     except KeyboardInterrupt:
         print("\nInterrupted.", file=sys.stderr)
         raise SystemExit(130)
-    except (RuntimeError, ValueError) as exc:
+    except PreviewError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         raise SystemExit(1)
 

@@ -223,7 +223,18 @@ def test_parse_grpc_endpoint_accepts_host_and_port(
 
 @pytest.mark.parametrize(
     "client_host",
-    ["localhost", "localhost:not-a-port", ":50051"],
+    [
+        "localhost",
+        "localhost:not-a-port",
+        ":50051",
+        "user@localhost:50051",
+        "user:password@localhost:50051",
+        "localhost:50051/path",
+        "localhost:50051?query=yes",
+        "localhost:50051#fragment",
+        "local host:50051",
+        " localhost:50051",
+    ],
 )
 def test_parse_grpc_endpoint_rejects_invalid_endpoints(preview_layout, client_host):
     with pytest.raises(ValueError, match="expected HOST:PORT"):
@@ -268,7 +279,7 @@ def test_require_server_reports_how_to_start_server(preview_layout, monkeypatch)
         preview_layout.socket, "create_connection", refuse_connection
     )
 
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(preview_layout.PreviewError) as exc_info:
         preview_layout.require_server("localhost:50051", 5.0)
 
     message = str(exc_info.value)
@@ -276,11 +287,16 @@ def test_require_server_reports_how_to_start_server(preview_layout, monkeypatch)
     assert "python scripts/data_collector_server.py --enable_physics" in message
 
 
+def test_require_server_converts_invalid_endpoint_to_preview_error(preview_layout):
+    with pytest.raises(preview_layout.PreviewError, match="expected HOST:PORT"):
+        preview_layout.require_server("localhost", 5.0)
+
+
 def test_positive_float_accepts_positive_value(preview_layout):
     assert preview_layout.positive_float("0.25") == 0.25
 
 
-@pytest.mark.parametrize("value", ["0", "-0.1"])
+@pytest.mark.parametrize("value", ["0", "-0.1", "nan", "inf", "-inf"])
 def test_positive_float_rejects_non_positive_values(preview_layout, value):
     with pytest.raises(argparse.ArgumentTypeError):
         preview_layout.positive_float(value)
@@ -400,10 +416,51 @@ def test_main_layout_only_does_not_require_server(
     assert preview_layout.main() == 0
 
 
-@pytest.mark.parametrize("error", [RuntimeError("server down"), ValueError("bad")])
-def test_run_cli_reports_expected_errors_without_traceback(
-    preview_layout, monkeypatch, capsys, error
+def test_ensure_sim_assets_reports_missing_package_as_preview_error(
+    preview_layout, monkeypatch
 ):
+    monkeypatch.delenv("SIM_ASSETS", raising=False)
+    monkeypatch.setitem(sys.modules, "geniesim_assets", None)
+
+    with pytest.raises(preview_layout.PreviewError, match="SIM_ASSETS is unset"):
+        preview_layout.ensure_sim_assets()
+
+
+def test_ensure_sim_assets_reports_missing_directory_as_preview_error(
+    preview_layout, monkeypatch, tmp_path
+):
+    missing = tmp_path / "missing-assets"
+    monkeypatch.setenv("SIM_ASSETS", str(missing))
+
+    with pytest.raises(preview_layout.PreviewError, match=str(missing)):
+        preview_layout.ensure_sim_assets()
+
+
+def test_main_converts_instance_filter_error_to_preview_error(
+    preview_layout, monkeypatch, tmp_path
+):
+    args = make_main_args(tmp_path, layout_only=True)
+    args.instance_ids = "7"
+    configure_main_dependencies(preview_layout, monkeypatch, tmp_path, args)
+
+    with pytest.raises(preview_layout.PreviewError, match="No layouts matched"):
+        preview_layout.main()
+
+
+def test_save_preview_images_reports_missing_cv2_as_preview_error(
+    preview_layout, monkeypatch, tmp_path
+):
+    monkeypatch.setitem(sys.modules, "cv2", None)
+
+    with pytest.raises(preview_layout.PreviewError, match="opencv-python"):
+        preview_layout.save_preview_images(object(), [], tmp_path, "demo_0")
+
+
+def test_run_cli_reports_expected_errors_without_traceback(
+    preview_layout, monkeypatch, capsys
+):
+    error = preview_layout.PreviewError("server down")
+
     def fail():
         raise error
 
@@ -416,11 +473,19 @@ def test_run_cli_reports_expected_errors_without_traceback(
     assert capsys.readouterr().err == f"Error: {error}\n"
 
 
-def test_run_cli_does_not_swallow_unexpected_exceptions(preview_layout, monkeypatch):
+@pytest.mark.parametrize("error_type", [RuntimeError, ValueError])
+def test_run_cli_preserves_builtin_errors(
+    preview_layout, monkeypatch, capsys, error_type
+):
+    error = error_type("unexpected")
+
     def fail():
-        raise LookupError("unexpected")
+        raise error
 
     monkeypatch.setattr(preview_layout, "main", fail)
 
-    with pytest.raises(LookupError, match="unexpected"):
+    with pytest.raises(error_type, match="unexpected") as exc_info:
         preview_layout.run_cli()
+
+    assert exc_info.value is error
+    assert capsys.readouterr().err == ""
