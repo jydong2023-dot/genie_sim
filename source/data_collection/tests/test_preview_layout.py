@@ -657,6 +657,46 @@ def test_discover_layouts_raises_when_no_layouts_exist(preview_layout, tmp_path)
         preview_layout.discover_layouts(template_path, tmp_path / "output")
 
 
+@pytest.mark.parametrize(
+    "task_name",
+    ["", ".", "..", "../escape", "nested/task", r"nested\task", "/../escaped"],
+)
+def test_discover_layouts_rejects_unsafe_task_without_creating_lock_or_files(
+    preview_layout, tmp_path, task_name
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path, task=task_name)
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    with pytest.raises(preview_layout.PreviewError, match="task"):
+        preview_layout.discover_layouts(template_path, output_dir)
+
+    assert list(output_dir.iterdir()) == []
+    assert sorted(path.name for path in tmp_path.iterdir()) == [
+        "output",
+        "template.json",
+    ]
+
+
+def test_discover_layouts_rejects_absolute_task_without_creating_lock_or_files(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path, task=str(tmp_path / "absolute"))
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    with pytest.raises(preview_layout.PreviewError, match="task"):
+        preview_layout.discover_layouts(template_path, output_dir)
+
+    assert list(output_dir.iterdir()) == []
+    assert sorted(path.name for path in tmp_path.iterdir()) == [
+        "output",
+        "template.json",
+    ]
+
+
 def test_discover_layouts_sorts_existing_layouts(preview_layout, tmp_path):
     template_path = tmp_path / "template.json"
     template = write_template(template_path)

@@ -403,12 +403,16 @@ def discover_layouts(template_path: Path, output_dir: Path) -> tuple[dict, Path,
     with open(template_path, "r", encoding="utf-8") as f:
         task_info = json.load(f)
     task_name = task_info["task"]
+    save_path = resolve_save_path(output_dir, task_name)
     output_root = resolve_output_root(output_dir)
     if not output_root.is_dir():
         raise FileNotFoundError(f"No layouts under missing output directory: {output_root}")
-    with layout_lock(output_root, task_name, shared=True):
-        save_path = resolve_save_path(output_dir, task_name)
-        files = discover_layout_files(save_path, task_name)
+    validated_task_name = save_path.name
+    with layout_lock(output_root, validated_task_name, shared=True):
+        current_save_path = resolve_save_path(output_dir, task_name)
+        if current_save_path != save_path:
+            raise PreviewError("Preview output containment changed during discovery")
+        files = discover_layout_files(save_path, validated_task_name)
     if not files:
         raise FileNotFoundError(f"No layouts in {save_path}; omit --skip-generate first")
     return task_info, save_path, files
