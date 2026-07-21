@@ -48,6 +48,15 @@ if [ "$ACTION" == "run" ]; then
         echo "using geniesim_assets='$ASSETS_SRC' -> /geniesim_assets"
     fi
 
+    # Let the container update editable-install metadata without depending on
+    # UID 1234 existing in the host user database.
+    ASSETS_GID="$(stat -c '%g' "$ASSETS_SRC")"
+    sudo chmod g+rwx "$ASSETS_SRC"
+    ASSETS_EGG_INFO="$ASSETS_SRC/geniesim_assets.egg-info"
+    if [ -d "$ASSETS_EGG_INFO" ]; then
+        sudo chmod -R g+rwX "$ASSETS_EGG_INFO"
+    fi
+
     mkdir -p ~/docker/isaac-sim/cache/main/ov
     mkdir -p ~/docker/isaac-sim/cache/main/warp
     mkdir -p ~/docker/isaac-sim/cache/computecache
@@ -65,6 +74,7 @@ if [ "$ACTION" == "run" ]; then
     xhost +
     docker run -it --name $CONTAINER_NAME \
         --user 1234:1234 \
+        --group-add "$ASSETS_GID" \
         --entrypoint ./scripts/entry_point.sh \
         --rm \
         --gpus all \
