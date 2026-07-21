@@ -419,7 +419,9 @@ def preview_instances(
                 logger.info(f"Headless preview done for {path.name}")
     finally:
         try:
-            robot.client.exit()
+            channel = getattr(robot.client, "channel", None)
+            if channel is not None:
+                channel.close()
         except Exception:
             pass
 

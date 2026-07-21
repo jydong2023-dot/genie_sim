@@ -339,6 +339,7 @@ def install_preview_fakes(
     *,
     generate_error_at=None,
     agent_init_error=None,
+    channel_close_error=None,
 ):
     files = [tmp_path / "demo_0.json", tmp_path / "demo_1.json"]
     for path in files:
@@ -349,12 +350,22 @@ def install_preview_fakes(
     prepare_calls = []
     sleep_calls = []
 
+    class FakeChannel:
+        def __init__(self):
+            self.close_calls = 0
+
+        def close(self):
+            self.close_calls += 1
+            if channel_close_error is not None:
+                raise channel_close_error
+
     class FakeClient:
         def __init__(self):
-            self.exit_calls = 0
+            self.channel = FakeChannel()
 
+        @property
         def exit(self):
-            self.exit_calls += 1
+            raise AssertionError("preview must not access the server exit RPC")
 
     class FakeRobot:
         def __init__(self):
@@ -480,7 +491,7 @@ def test_preview_instances_gui_loads_layouts_without_collecting_trajectories(
     assert fakes.prepare_calls == [
         (path, tmp_path / "assets", False) for path in fakes.files
     ]
-    assert fakes.robot.client.exit_calls == 1
+    assert fakes.robot.client.channel.close_calls == 1
 
 
 def test_preview_instances_without_gui_saves_each_layout_without_waiting_for_input(
@@ -521,10 +532,10 @@ def test_preview_instances_without_gui_saves_each_layout_without_waiting_for_inp
         ("reset",),
         ("generate_layout", str(fakes.files[1])),
     ]
-    assert fakes.robot.client.exit_calls == 1
+    assert fakes.robot.client.channel.close_calls == 1
 
 
-def test_preview_instances_exits_once_and_propagates_layout_error(
+def test_preview_instances_closes_channel_once_and_propagates_layout_error(
     preview_layout, monkeypatch, tmp_path
 ):
     fakes = install_preview_fakes(
@@ -543,10 +554,10 @@ def test_preview_instances_exits_once_and_propagates_layout_error(
         ("reset",),
         ("generate_layout", str(fakes.files[1])),
     ]
-    assert fakes.robot.client.exit_calls == 1
+    assert fakes.robot.client.channel.close_calls == 1
 
 
-def test_preview_instances_exits_once_when_agent_construction_fails(
+def test_preview_instances_closes_channel_once_when_agent_construction_fails(
     preview_layout, monkeypatch, tmp_path
 ):
     agent_init_error = RuntimeError("agent construction failed")
@@ -564,7 +575,57 @@ def test_preview_instances_exits_once_when_agent_construction_fails(
 
     assert exc_info.value is agent_init_error
     assert fakes.build_calls == [({"task": "demo"}, "localhost:50051")]
-    assert fakes.robot.client.exit_calls == 1
+    assert fakes.robot.client.channel.close_calls == 1
+
+
+def test_preview_instances_ignores_channel_close_error_after_success(
+    preview_layout, monkeypatch, tmp_path
+):
+    close_error = RuntimeError("channel close failed")
+    fakes = install_preview_fakes(
+        preview_layout,
+        monkeypatch,
+        tmp_path,
+        channel_close_error=close_error,
+    )
+
+    preview_layout.preview_instances(
+        **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=False)
+    )
+
+    assert fakes.robot.client.channel.close_calls == 1
+
+
+def test_preview_instances_channel_close_error_does_not_mask_layout_error(
+    preview_layout, monkeypatch, tmp_path
+):
+    close_error = RuntimeError("channel close failed")
+    fakes = install_preview_fakes(
+        preview_layout,
+        monkeypatch,
+        tmp_path,
+        generate_error_at=2,
+        channel_close_error=close_error,
+    )
+
+    with pytest.raises(RuntimeError, match="layout generation failed") as exc_info:
+        preview_layout.preview_instances(
+            **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=False)
+        )
+
+    assert exc_info.value is fakes.generation_error
+    assert fakes.robot.client.channel.close_calls == 1
+
+
+def test_preview_instances_allows_client_without_channel(
+    preview_layout, monkeypatch, tmp_path
+):
+    fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
+    del fakes.robot.client.channel
+
+    preview_layout.preview_instances(
+        **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=False)
+    )
 
 
 def test_preview_instances_has_no_trajectory_collection_calls():
@@ -592,6 +653,7 @@ def test_preview_instances_has_no_trajectory_collection_calls():
             "move_pose",
             "moveto",
             "set_joint_positions",
+            "exit",
         }
     )
 
