@@ -215,6 +215,20 @@ def rewrite_asset_paths_relative(task_info: dict, assets_root: Path) -> dict:
     return task_info
 
 
+def resolve_output_root(output_dir: Path, *, create: bool = False) -> Path:
+    output_path = output_dir.expanduser().absolute()
+    if output_path.is_symlink():
+        raise PreviewError(f"Preview output root must not be a symlink: {output_path}")
+    if create:
+        output_path.mkdir(parents=True, exist_ok=True)
+    if output_path.is_symlink():
+        raise PreviewError(f"Preview output root must not be a symlink: {output_path}")
+    output_root = output_path.resolve()
+    if output_path != output_root:
+        raise PreviewError(f"Preview output root must not contain symlinks: {output_path}")
+    return output_root
+
+
 def resolve_save_path(output_dir: Path, task_name: object) -> Path:
     if (
         not isinstance(task_name, str)
@@ -226,8 +240,13 @@ def resolve_save_path(output_dir: Path, task_name: object) -> Path:
     ):
         raise PreviewError(f"Invalid task name for preview output: {task_name!r}")
 
-    output_root = output_dir.expanduser().resolve()
-    save_path = (output_root / task_name).resolve()
+    output_root = resolve_output_root(output_dir)
+    unresolved_save_path = output_root / task_name
+    if unresolved_save_path.is_symlink():
+        raise PreviewError(
+            f"Task output must not be a symlink: {unresolved_save_path}"
+        )
+    save_path = unresolved_save_path.resolve()
     if save_path == output_root or output_root not in save_path.parents:
         raise PreviewError(
             f"Resolved task output must be inside output directory: {save_path}"
@@ -256,21 +275,103 @@ def generate_layouts(
     with open(template_path, "r", encoding="utf-8") as f:
         task_info = json.load(f)
     task_name = task_info["task"]
+    output_root = resolve_output_root(output_dir, create=True)
     save_path = resolve_save_path(output_dir, task_name)
-    if save_path.exists() and (
-        not save_path.is_dir() or any(save_path.iterdir())
-    ) and not overwrite:
-        raise PreviewError(
-            f"Layout destination is not empty: {save_path}. "
-            "Use --skip-generate to reuse it or --overwrite to replace it."
-        )
     if num_episodes is None:
         num_episodes = int(task_info.get("recording_setting", {}).get("num_of_episode", 1))
-    logger.info(f"Generating {num_episodes} layouts -> {save_path}")
-    tg = TaskGenerator(copy.deepcopy(task_info))
-    tg.generate_tasks(save_path=str(save_path), task_num=num_episodes, task_name=task_name)
-    files = discover_layout_files(save_path, task_name)
-    return task_info, save_path, files
+    lock_path = output_root / f".{task_name}.preview.lock"
+    try:
+        lock_path.mkdir()
+    except FileExistsError as exc:
+        raise PreviewError(
+            f"Layout generation already in progress for task {task_name!r}"
+        ) from exc
+
+    try:
+        save_path = resolve_save_path(output_dir, task_name)
+        if save_path.exists() and (
+            not save_path.is_dir() or any(save_path.iterdir())
+        ) and not overwrite:
+            raise PreviewError(
+                f"Layout destination is not empty: {save_path}. "
+                "Use --skip-generate to reuse it or --overwrite to replace it."
+            )
+
+        logger.info(f"Generating {num_episodes} layouts -> {save_path}")
+        tg = TaskGenerator(copy.deepcopy(task_info))
+        with tempfile.TemporaryDirectory(
+            prefix=f".{task_name}.preview-", dir=output_root
+        ) as temp_dir:
+            temporary_dir = Path(temp_dir)
+            generated_files = []
+            for episode_id in range(num_episodes):
+                output_file = temporary_dir / f"{task_name}_{episode_id}.json"
+                for _ in range(5):
+                    if tg.generate(str(output_file)):
+                        generated_files.append(output_file)
+                        break
+                else:
+                    raise PreviewError(
+                        f"Failed to generate layout {episode_id} after 5 attempts"
+                    )
+
+            current_output_root = resolve_output_root(output_dir)
+            current_save_path = resolve_save_path(output_dir, task_name)
+            if current_output_root != output_root or current_save_path != save_path:
+                raise PreviewError("Preview output containment changed during generation")
+            if save_path.exists() and not save_path.is_dir():
+                raise PreviewError(f"Layout destination is not a directory: {save_path}")
+            if save_path.exists() and any(save_path.iterdir()) and not overwrite:
+                raise PreviewError(
+                    f"Layout destination is not empty: {save_path}. "
+                    "Use --skip-generate to reuse it or --overwrite to replace it."
+                )
+
+            destination_existed = save_path.exists()
+            save_path.mkdir(exist_ok=True)
+            if save_path.is_symlink() or save_path.resolve().parent != output_root:
+                raise PreviewError(f"Unsafe task output before commit: {save_path}")
+            backup_dir = temporary_dir / "previous"
+            backups = []
+            installed = []
+            try:
+                if overwrite:
+                    backup_dir.mkdir()
+                    for old_layout in discover_layout_files(save_path, task_name):
+                        backup = backup_dir / old_layout.name
+                        os.replace(old_layout, backup)
+                        backups.append((backup, old_layout))
+                for generated_file in generated_files:
+                    destination = save_path / generated_file.name
+                    os.replace(generated_file, destination)
+                    installed.append(destination)
+            except BaseException as commit_error:
+                rollback_errors = []
+                for destination in installed:
+                    try:
+                        destination.unlink(missing_ok=True)
+                    except OSError as exc:
+                        rollback_errors.append(exc)
+                for backup, destination in backups:
+                    try:
+                        os.replace(backup, destination)
+                    except OSError as exc:
+                        rollback_errors.append(exc)
+                if not destination_existed:
+                    try:
+                        save_path.rmdir()
+                    except OSError:
+                        pass
+                if rollback_errors:
+                    raise PreviewError(
+                        f"Failed to roll back layout commit for {task_name!r}"
+                    ) from commit_error
+                raise
+
+        files = discover_layout_files(save_path, task_name)
+        return task_info, save_path, files
+    finally:
+        lock_path.rmdir()
 
 
 def discover_layouts(template_path: Path, output_dir: Path) -> tuple[dict, Path, list[Path]]:
@@ -492,8 +593,8 @@ def main() -> int:
     args = parse_args()
     assets_root = ensure_sim_assets()
     template_path = args.task_template.expanduser().resolve()
-    output_dir = args.output_dir.expanduser().resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = args.output_dir.expanduser().absolute()
+    resolve_output_root(output_dir, create=True)
 
     if not args.gui and not args.headless and not args.layout_only:
         args.gui = True  # default interactive
