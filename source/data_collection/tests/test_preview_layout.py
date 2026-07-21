@@ -445,8 +445,9 @@ def test_preview_instances_gui_loads_layouts_without_collecting_trajectories(
     preview_layout, monkeypatch, tmp_path
 ):
     fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
-    input_calls = []
-    monkeypatch.setattr("builtins.input", lambda: input_calls.append(None))
+    monkeypatch.setattr(
+        "builtins.input", lambda: fakes.agent_events.append(("input",))
+    )
 
     def unexpected_camera_call(*args, **kwargs):
         pytest.fail("save_images=False must not access camera RPCs")
@@ -464,14 +465,15 @@ def test_preview_instances_gui_loads_layouts_without_collecting_trajectories(
         ("construct", fakes.robot),
         ("reset",),
         ("generate_layout", str(fakes.files[0])),
+        ("input",),
         ("reset",),
         ("generate_layout", str(fakes.files[1])),
+        ("input",),
     ]
     assert fakes.prepare_calls == [
         (path, tmp_path / "assets", False) for path in fakes.files
     ]
     assert fakes.sleep_calls == [0.5, 1.0, 0.5, 1.0]
-    assert input_calls == [None, None]
     assert fakes.robot.open_gripper_calls == [
         ("right", False),
         ("left", False),
