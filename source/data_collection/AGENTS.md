@@ -205,10 +205,11 @@ trajectory planner.
 The default gRPC endpoint is `localhost:50051`. A missing server fails fast
 after the connection timeout and reports the exact `--enable_physics` command.
 `--connect-timeout` is one shared total budget across the gRPC readiness
-preflight, lazy client imports, robot setup, and the actual `RpcClient`
-connection; each stage receives only the remaining time. Camera capture is
-all-or-nothing per layout: every requested camera must return an image and all
-PNGs must stage successfully before any final image is published.
+preflight, lazy client imports, and the actual `RpcClient` readiness check;
+each stage receives only the remaining time. It does not set a deadline on the
+subsequent `init_robot` RPC. Camera capture is strict: every requested camera
+must return an image and all PNGs must stage successfully before the script
+starts publishing the final image files one by one.
 `preview_layout.py` accepts the complete CLI surface below:
 
 | Flag | Effect |
@@ -219,7 +220,7 @@ PNGs must stage successfully before any final image is published.
 | `--skip-generate` | Reuse existing layouts under `output-dir/<task>/`. |
 | `--instance-ids IDS` | Preview only comma-separated generated indices, for example `0,2`. |
 | `--client-host HOST:PORT` | gRPC endpoint (default `localhost:50051`). |
-| `--connect-timeout SECONDS` | Positive shared total budget for gRPC readiness, client import/setup, and the actual `RpcClient` connection (default 5 seconds). |
+| `--connect-timeout SECONDS` | Positive shared total budget for gRPC readiness, lazy client import, and the actual `RpcClient` readiness check (default 5 seconds); it does not bound the later `init_robot` RPC. |
 | `--layout-only` | Generate/reuse layouts without connecting to Isaac. |
 | `--gui` | Wait for Enter between layouts in the Isaac window; this is the default mode unless `--headless` or `--layout-only` is set. |
 | `--headless` | Load each scene without waiting and save resolved camera images. |
