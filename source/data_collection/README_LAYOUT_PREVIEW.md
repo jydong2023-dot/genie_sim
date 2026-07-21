@@ -145,6 +145,32 @@ docker exec -it data_collection_open_source bash -lc '
 
 ## 常见问题
 
+### 启动时出现 `There was an error running python`
+
+该消息可能表示容器无法更新宿主机上的 `geniesim_assets.egg-info`。当前
+`start_gui.sh` 会把资产目录的宿主机 GID 加入容器，并为 editable-install
+元数据补充组写权限。已经用旧脚本创建的容器不会自动获得这个补充组，需要
+先停止并重新创建：
+
+```bash
+docker stop data_collection_open_source
+
+export GENIE_SIM_ROOT=/home/user/djy/genie_sim
+export GENIESIM_ASSETS_SRC=/home/user/djy/geniesim_assets
+cd "$GENIE_SIM_ROOT/source/data_collection"
+./scripts/start_gui.sh run data_collection_open_source
+```
+
+容器使用 `--rm`，停止后会自动删除；仓库、资产和布局输出均为宿主机挂载
+目录，不会随容器删除。
+
+单独出现 `groups: cannot find name for group ID ...` 只是容器内没有对应的
+组名，不代表容器启动失败。可在另一个宿主机终端用以下命令确认状态：
+
+```bash
+docker ps --filter name=data_collection_open_source
+```
+
 ### 容器不存在
 
 如果终端 2 报错 `No such container`，说明终端 1 尚未创建容器，或容器已经
