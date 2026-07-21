@@ -174,16 +174,18 @@ geniesim autocollect run apple_g2 --dry-run
 
 This is a manually orchestrated, two-terminal workflow. Both terminals must be
 in `source/data_collection` with `SIM_ASSETS` pointing at the correct asset
-root (or `geniesim_assets` installed editable). Start the GUI server yourself
-in Terminal 1:
+root exported explicitly; the standalone server does not provide a package
+fallback. Start the GUI server yourself in Terminal 1:
 
 ```bash
+export SIM_ASSETS=/path/to/geniesim_assets
 python scripts/data_collector_server.py --enable_physics
 ```
 
 Then generate and load layouts from Terminal 2:
 
 ```bash
+export SIM_ASSETS=/path/to/geniesim_assets
 python scripts/preview_layout.py --gui \
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
   --output-dir /home/user/djy/genie_sim/output \

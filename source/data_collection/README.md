@@ -258,8 +258,8 @@ This workflow generates task layouts and loads them into an already-running
 Isaac Sim window for inspection. Start the server yourself first: the preview
 script does not start or stop Isaac Sim, Docker, or the server process. Use two
 terminals in `source/data_collection`, with `SIM_ASSETS` set to the correct
-asset root (or with `geniesim_assets` installed editable so the script can
-resolve it).
+asset root in both terminals. The standalone server reads this environment
+variable directly, so an editable `geniesim_assets` install is not a substitute.
 
 **Terminal 1 - start the GUI server:**
 
