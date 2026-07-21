@@ -264,7 +264,7 @@ variable directly, so an editable `geniesim_assets` install is not a substitute.
 **Terminal 1 - start the GUI server:**
 
 ```bash
-cd /home/user/djy/genie_sim/source/data_collection
+cd /path/to/genie_sim/source/data_collection
 export SIM_ASSETS=/path/to/geniesim_assets
 python scripts/data_collector_server.py --enable_physics
 ```
@@ -275,11 +275,11 @@ Layout preview only needs physics. Do not add `--enable_curobo` or
 **Terminal 2 - generate and preview two layouts:**
 
 ```bash
-cd /home/user/djy/genie_sim/source/data_collection
+cd /path/to/genie_sim/source/data_collection
 export SIM_ASSETS=/path/to/geniesim_assets
 python scripts/preview_layout.py --gui \
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
-  --output-dir /home/user/djy/genie_sim/output \
+  --output-dir /path/to/genie_sim/output \
   --num-episodes 2
 ```
 

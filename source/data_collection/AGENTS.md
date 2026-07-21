@@ -188,7 +188,7 @@ Then generate and load layouts from Terminal 2:
 export SIM_ASSETS=/path/to/geniesim_assets
 python scripts/preview_layout.py --gui \
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
-  --output-dir /home/user/djy/genie_sim/output \
+  --output-dir /path/to/genie_sim/output \
   --num-episodes 2
 ```
 
