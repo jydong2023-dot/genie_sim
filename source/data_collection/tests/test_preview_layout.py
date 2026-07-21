@@ -1,3 +1,4 @@
+import argparse
 import importlib.util
 import json
 import sys
@@ -204,3 +205,222 @@ def test_rewrite_asset_paths_relative_only_rewrites_internal_string_paths(
     assert external_object["model_path"] is None
     assert "original_model_path" not in external_object
     assert external_object["untouched"] == "value"
+
+
+@pytest.mark.parametrize(
+    ("client_host", "expected"),
+    [
+        ("localhost:50051", ("localhost", 50051)),
+        ("127.0.0.1:50051", ("127.0.0.1", 50051)),
+        ("[::1]:50051", ("::1", 50051)),
+    ],
+)
+def test_parse_grpc_endpoint_accepts_host_and_port(
+    preview_layout, client_host, expected
+):
+    assert preview_layout.parse_grpc_endpoint(client_host) == expected
+
+
+@pytest.mark.parametrize(
+    "client_host",
+    ["localhost", "localhost:not-a-port", ":50051"],
+)
+def test_parse_grpc_endpoint_rejects_invalid_endpoints(preview_layout, client_host):
+    with pytest.raises(ValueError, match="expected HOST:PORT"):
+        preview_layout.parse_grpc_endpoint(client_host)
+
+
+def test_require_server_connects_with_timeout_and_closes_socket(
+    preview_layout, monkeypatch
+):
+    calls = []
+
+    class FakeConnection:
+        closed = False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            self.closed = True
+
+    connection = FakeConnection()
+
+    def fake_create_connection(endpoint, timeout):
+        calls.append((endpoint, timeout))
+        return connection
+
+    monkeypatch.setattr(
+        preview_layout.socket, "create_connection", fake_create_connection
+    )
+
+    preview_layout.require_server("[::1]:50051", 2.5)
+
+    assert calls == [(('::1', 50051), 2.5)]
+    assert connection.closed is True
+
+
+def test_require_server_reports_how_to_start_server(preview_layout, monkeypatch):
+    def refuse_connection(endpoint, timeout):
+        raise ConnectionRefusedError("connection refused")
+
+    monkeypatch.setattr(
+        preview_layout.socket, "create_connection", refuse_connection
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        preview_layout.require_server("localhost:50051", 5.0)
+
+    message = str(exc_info.value)
+    assert "localhost:50051" in message
+    assert "python scripts/data_collector_server.py --enable_physics" in message
+
+
+def test_positive_float_accepts_positive_value(preview_layout):
+    assert preview_layout.positive_float("0.25") == 0.25
+
+
+@pytest.mark.parametrize("value", ["0", "-0.1"])
+def test_positive_float_rejects_non_positive_values(preview_layout, value):
+    with pytest.raises(argparse.ArgumentTypeError):
+        preview_layout.positive_float(value)
+
+
+def test_parse_args_defaults_connect_timeout_to_five_seconds(
+    preview_layout, monkeypatch
+):
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT_PATH)])
+
+    args = preview_layout.parse_args()
+
+    assert args.connect_timeout == 5.0
+
+
+def test_parse_args_uses_positive_float_for_connect_timeout(
+    preview_layout, monkeypatch
+):
+    monkeypatch.setattr(
+        sys, "argv", [str(SCRIPT_PATH), "--connect-timeout", "1.25"]
+    )
+    assert preview_layout.parse_args().connect_timeout == 1.25
+
+    monkeypatch.setattr(
+        sys, "argv", [str(SCRIPT_PATH), "--connect-timeout", "0"]
+    )
+    with pytest.raises(SystemExit):
+        preview_layout.parse_args()
+
+
+def make_main_args(tmp_path, *, layout_only):
+    return types.SimpleNamespace(
+        task_template=tmp_path / "template.json",
+        output_dir=tmp_path / "output",
+        num_episodes=None,
+        skip_generate=True,
+        layout_only=layout_only,
+        gui=False,
+        headless=False,
+        save_images=False,
+        cameras="head",
+        client_host="localhost:50051",
+        connect_timeout=1.5,
+        instance_ids="",
+        keep_absolute_assets=False,
+    )
+
+
+def configure_main_dependencies(preview_layout, monkeypatch, tmp_path, args):
+    save_path = tmp_path / "output" / "demo"
+    layout_path = save_path / "demo_0.json"
+    monkeypatch.setattr(preview_layout, "parse_args", lambda: args)
+    monkeypatch.setattr(preview_layout, "ensure_sim_assets", lambda: tmp_path)
+    monkeypatch.setattr(
+        preview_layout,
+        "discover_layouts",
+        lambda template_path, output_dir: ({}, save_path, [layout_path]),
+    )
+    return save_path
+
+
+def test_main_requires_server_before_importing_or_building_robot(
+    preview_layout, monkeypatch, tmp_path
+):
+    args = make_main_args(tmp_path, layout_only=False)
+    configure_main_dependencies(preview_layout, monkeypatch, tmp_path, args)
+    calls = []
+
+    monkeypatch.setattr(
+        preview_layout,
+        "require_server",
+        lambda endpoint, timeout: calls.append(("require", endpoint, timeout)),
+    )
+    monkeypatch.setattr(
+        preview_layout,
+        "resolve_camera_prims",
+        lambda template, cameras: [],
+    )
+    monkeypatch.setattr(
+        preview_layout,
+        "_import_isaac_client",
+        lambda: calls.append(("import",)),
+    )
+    monkeypatch.setattr(
+        preview_layout,
+        "build_robot",
+        lambda template, client_host: calls.append(("build",)),
+    )
+
+    def fake_preview_instances(*args, **kwargs):
+        preview_layout._import_isaac_client()
+        preview_layout.build_robot({}, "localhost:50051")
+
+    monkeypatch.setattr(preview_layout, "preview_instances", fake_preview_instances)
+
+    assert preview_layout.main() == 0
+    assert calls == [
+        ("require", "localhost:50051", 1.5),
+        ("import",),
+        ("build",),
+    ]
+
+
+def test_main_layout_only_does_not_require_server(
+    preview_layout, monkeypatch, tmp_path
+):
+    args = make_main_args(tmp_path, layout_only=True)
+    configure_main_dependencies(preview_layout, monkeypatch, tmp_path, args)
+
+    def unexpected_call(*args, **kwargs):
+        pytest.fail("layout-only mode must not preflight the server")
+
+    monkeypatch.setattr(preview_layout, "require_server", unexpected_call)
+    monkeypatch.setattr(preview_layout, "_import_isaac_client", unexpected_call)
+    monkeypatch.setattr(preview_layout, "build_robot", unexpected_call)
+
+    assert preview_layout.main() == 0
+
+
+@pytest.mark.parametrize("error", [RuntimeError("server down"), ValueError("bad")])
+def test_run_cli_reports_expected_errors_without_traceback(
+    preview_layout, monkeypatch, capsys, error
+):
+    def fail():
+        raise error
+
+    monkeypatch.setattr(preview_layout, "main", fail)
+
+    with pytest.raises(SystemExit) as exc_info:
+        preview_layout.run_cli()
+
+    assert exc_info.value.code == 1
+    assert capsys.readouterr().err == f"Error: {error}\n"
+
+
+def test_run_cli_does_not_swallow_unexpected_exceptions(preview_layout, monkeypatch):
+    def fail():
+        raise LookupError("unexpected")
+
+    monkeypatch.setattr(preview_layout, "main", fail)
+
+    with pytest.raises(LookupError, match="unexpected"):
+        preview_layout.run_cli()

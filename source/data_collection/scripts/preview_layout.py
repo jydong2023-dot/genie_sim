@@ -31,9 +31,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import socket
 import sys
 import time
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import numpy as np
 
@@ -65,6 +67,40 @@ CAMERA_ALIAS = {
 }
 
 
+def positive_float(value: str) -> float:
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"expected a positive number: {value}") from exc
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError(f"expected a positive number: {value}")
+    return parsed
+
+
+def parse_grpc_endpoint(client_host: str) -> tuple[str, int]:
+    error = f"Invalid gRPC endpoint {client_host!r}; expected HOST:PORT"
+    try:
+        parsed = urlsplit(f"//{client_host}")
+        port = parsed.port
+    except ValueError as exc:
+        raise ValueError(error) from exc
+    if not parsed.hostname or port is None or not 1 <= port <= 65535:
+        raise ValueError(error)
+    return parsed.hostname, port
+
+
+def require_server(client_host: str, timeout: float) -> None:
+    endpoint = parse_grpc_endpoint(client_host)
+    try:
+        with socket.create_connection(endpoint, timeout=timeout):
+            pass
+    except OSError as exc:
+        raise RuntimeError(
+            f"Cannot connect to preview server at {client_host}. Start it with: "
+            "python scripts/data_collector_server.py --enable_physics"
+        ) from exc
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument(
@@ -93,6 +129,12 @@ def parse_args() -> argparse.Namespace:
         help="Comma aliases (head,left_hand,right_hand) mapped from template camera_list",
     )
     p.add_argument("--client-host", type=str, default="localhost:50051")
+    p.add_argument(
+        "--connect-timeout",
+        type=positive_float,
+        default=5.0,
+        help="Seconds to wait for the Isaac gRPC server",
+    )
     p.add_argument(
         "--instance-ids",
         type=str,
@@ -381,6 +423,8 @@ def main() -> int:
         print(f"Layout-only done. Saved under {save_path}")
         return 0
 
+    require_server(args.client_host, args.connect_timeout)
+
     cameras = resolve_camera_prims(template, args.cameras)
     if args.save_images and not cameras:
         logger.warning("No cameras resolved from template; --save-images will be skipped")
@@ -403,9 +447,16 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
+def run_cli() -> None:
     try:
         raise SystemExit(main())
     except KeyboardInterrupt:
         print("\nInterrupted.", file=sys.stderr)
         raise SystemExit(130)
+    except (RuntimeError, ValueError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    run_cli()
