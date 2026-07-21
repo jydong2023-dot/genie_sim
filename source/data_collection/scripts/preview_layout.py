@@ -98,6 +98,8 @@ def parse_grpc_endpoint(client_host: str) -> tuple[str, int]:
     )
     if (
         any(char.isspace() for char in client_host)
+        or "?" in client_host
+        or "#" in client_host
         or invalid_components
         or not parsed.hostname
         or port is None
