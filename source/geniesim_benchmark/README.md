@@ -52,6 +52,24 @@ geniesim benchmark list --robot=g2op --category=instruction_following
 geniesim benchmark batch --category=instruction_following --robot=g2op
 ```
 
+### Augment one LLM-task scene
+
+Generate deterministic variants of any numeric scene bundle under
+`benchmark/config/llm_task/`. The tool supports object pose, benchmark-runtime
+lighting, table height, and table color/texture changes while preserving the
+source task's instructions and scoring rules:
+
+```bash
+python scripts/generate_stack_red_black_scenarios.py \
+  --task stack_red_block_on_black_block \
+  --source-instance 0 \
+  --count 40
+```
+
+Use `--list-objects` before writing a profile for a complex scene. See the
+[scenario augmentation guide](scripts/README_SCENARIO_AUGMENTATION.md) and
+[example profile](scripts/scenario_augmentation.example.json).
+
 ### Convert collected datasets between formats
 
 The benchmark stack ships dataset utilities under

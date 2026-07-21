@@ -433,6 +433,20 @@ def _python_check_cmd() -> str:
     return shutil.which("python3") or sys.executable or "python3"
 
 
+def _python_check_env() -> dict[str, str]:
+    """Return an environment for plain ``python3`` inference probes.
+
+    ``/isaac-sim/python.sh`` prepends Isaac's Python 3.11 stdlib and
+    site-packages to ``PYTHONPATH``. ``check-inference`` deliberately runs
+    plain ``python3`` (usually 3.12 in the container), so inheriting those
+    paths can make it import a mismatched standard library at startup.
+    """
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+    env.pop("PYTHONHOME", None)
+    return env
+
+
 def _has_flag(args: list[str], *names: str) -> bool:
     """True iff any ``--name`` / ``--name=...`` is present in ``args``."""
     for a in args:
@@ -538,9 +552,9 @@ def _do_check_inference(args: list[str]) -> None:
     print()
     print(f"   {YELLOW}$ {' '.join(cmd)}{RST}")
     print()
-    # execvp so the probe owns the tty: emoji-rich output, exit code,
+    # execvpe so the probe owns the tty: emoji-rich output, exit code,
     # and Ctrl-C all go straight to the user.
-    os.execvp(cmd[0], cmd)
+    os.execvpe(cmd[0], cmd, _python_check_env())
 
 
 def run(args: list[str]) -> None:

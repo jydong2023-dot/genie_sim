@@ -30,6 +30,13 @@ from geniesim_benchmark.utils.name_utils import robot_type_mapping
 from geniesim_benchmark.benchmark.policy.demopolicy import DemoPolicy
 from geniesim_benchmark.benchmark.hooks.task import TaskHook
 from geniesim_benchmark.benchmark.subscene_override import resolve_sub_usd_path
+from geniesim_benchmark.benchmark.scenario_config import (
+    apply_scenario_to_env,
+    apply_scenario_to_task_config,
+    load_scenario_config,
+    scenario_cache_key,
+    validate_vector_scenarios,
+)
 from geniesim_benchmark.app.controllers.api_core import APICore
 from geniesim_benchmark.utils.generalization_utils import update_init_env
 
@@ -187,6 +194,7 @@ class TaskBenchmark(object):
             episode_idx = 0
             scene_instance_ids = [0]
             sub_task_name = self.args.sub_task_name
+            sub_task_path = None
             if sub_task_name != "":
                 sub_task_path = os.path.join(system_utils.benchmark_conf_path(), "llm_task", sub_task_name)
                 scene_instance_ids = sorted([int(name) for name in os.listdir(sub_task_path) if name.isdigit()])
@@ -241,13 +249,17 @@ class TaskBenchmark(object):
                     self.args.model_arc,
                 )
 
+            baseline_task_config = copy.deepcopy(self.task_config)
             for instance_id in scene_instance_ids:
                 # one instance
+                scenario = load_scenario_config(Path(sub_task_path), instance_id) if sub_task_path else None
+                self.task_config = copy.deepcopy(baseline_task_config)
+                apply_scenario_to_task_config(self.task_config, scenario)
                 self.task_config["scene"]["scene_instance_id"] = instance_id
                 specific_task_files = sorted(glob.glob(task_folder + "/*.json"))
 
                 self.create_policy()
-                self.create_env(specific_task_files[0], instance_id)
+                self.create_env(specific_task_files[0], instance_id, scenario)
                 if hasattr(self.policy, "_ikfk_solver") and hasattr(self.env, "ikfk_solver"):
                     self.policy._ikfk_solver = self.env.ikfk_solver
                 time.sleep(0.5)
@@ -260,6 +272,7 @@ class TaskBenchmark(object):
                     gen_seed = seed + instance_id * 1000 + file_idx
                     np.random.seed(gen_seed)
                     update_init_env(self.env, self.task_config, self.episode_content)
+                    apply_scenario_to_env(self.env, scenario)
                     self.env.apply_generalization(self.api_core, self.task_config)
 
                     if self.args.record:
@@ -331,6 +344,7 @@ class TaskBenchmark(object):
                         self.evaluate_summary.make_cache()
 
                 self.env.stop()
+            self.task_config = baseline_task_config
             if self.args.record:
                 self.api_core.concat_recordings()
             self.api_core.stop()
@@ -405,7 +419,7 @@ class TaskBenchmark(object):
             scene_info = {}
         return scene_info
 
-    def create_env(self, episode_file, instance_id):
+    def create_env(self, episode_file, instance_id, scenario=None):
         if "robot" not in self.task_config:
             robot_cfg = "G1_120s.json"
         else:
@@ -427,6 +441,7 @@ class TaskBenchmark(object):
             self.task_config["robot"]["robot_init_pose"]["position"],
             self.task_config["robot"]["robot_init_pose"]["quaternion"],
             sub_usd_path,
+            scene_variant_key=scenario_cache_key(scenario),
         )
 
         scene_info = None
@@ -631,7 +646,16 @@ class TaskBenchmark(object):
 
         n_envs = len(scene_instance_ids)
         specific_task_files = sorted(glob.glob(task_folder + "/*.json"))
+        scenario_task_dir = Path(system_utils.benchmark_conf_path()) / "llm_task" / sub_task_name
+        scenarios = [
+            load_scenario_config(scenario_task_dir, instance_id) if sub_task_name else None
+            for instance_id in scene_instance_ids
+        ]
+        validate_vector_scenarios(scenarios)
+        scenario_by_id = dict(zip(scene_instance_ids, scenarios))
         scene_usd = self.task_config["scene"]["scene_usd"]
+        if scenarios and scenarios[0] is not None and scenarios[0].background_usd is not None:
+            scene_usd = scenarios[0].background_usd
         init_position = self.task_config["robot"]["robot_init_pose"]["position"]
         init_rotation = self.task_config["robot"]["robot_init_pose"]["quaternion"]
 
@@ -668,6 +692,7 @@ class TaskBenchmark(object):
         for slot, instance_id in enumerate(scene_instance_ids):
             api_view = self.api_core.fork_for_env(slot)
             task_config_copy = json.loads(json.dumps(self.task_config))
+            apply_scenario_to_task_config(task_config_copy, scenario_by_id[instance_id])
             task_config_copy["scene"]["scene_instance_id"] = instance_id
             task_configs.append(task_config_copy)
 
@@ -704,6 +729,7 @@ class TaskBenchmark(object):
                     gen_seed = seed + instance_id * 1000 + file_idx
                     np.random.seed(gen_seed)
                     update_init_env(envs[slot], task_configs[slot], episode_content)
+                    apply_scenario_to_env(envs[slot], scenario_by_id[instance_id])
                     envs[slot].apply_generalization(envs[slot].api_core, task_configs[slot])
 
                 episode_count = 1 if self.args.preview else len(envs[0].task.instructions)

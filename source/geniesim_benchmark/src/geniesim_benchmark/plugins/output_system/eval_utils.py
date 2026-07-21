@@ -66,6 +66,7 @@ TASK_STEPS = {
     "sort_number": ["MixedRules"],
     "stack_bowls": ["Stack"],
     "stack_three_building_blocks": ["Stack"],
+    "stack_red_block_on_black_block": ["Ontop"],
     "sort_cubes_by_size": ["MixedRules"],
     "pick_object_absolute_position": ["Follow", "PickUpOnGripper"],
     "pick_object_relative_position": ["Follow", "PickUpOnGripper"],

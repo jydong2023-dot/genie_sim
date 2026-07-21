@@ -271,8 +271,24 @@ class APICore:
         task()
 
     ######################===================== New API BEGIN ===================================
-    def init_robot_cfg(self, robot_cfg, scene_usd, init_position, init_rotation, sub_task_name=""):
-        self.run_on_render_loop(self._init_robot_cfg, robot_cfg, scene_usd, init_position, init_rotation, sub_task_name)
+    def init_robot_cfg(
+        self,
+        robot_cfg,
+        scene_usd,
+        init_position,
+        init_rotation,
+        sub_task_name="",
+        scene_variant_key=None,
+    ):
+        self.run_on_render_loop(
+            self._init_robot_cfg,
+            robot_cfg,
+            scene_usd,
+            init_position,
+            init_rotation,
+            sub_task_name,
+            scene_variant_key,
+        )
 
     @property
     def is_vec_mode(self) -> bool:
@@ -1572,6 +1588,24 @@ class APICore:
                 logger.error(f"Failed to initialize articulation {prim_path}: {e}")
                 continue
 
+    def _replace_background_scene(self, scene_usd_path):
+        """Replace /World while keeping the robot articulation alive."""
+        world_prim = self._stage.GetPrimAtPath("/World")
+        if world_prim.IsValid():
+            delete_prim(world_prim.GetPath())
+        add_reference_to_stage(scene_usd_path, "/World")
+        self._filter_objects(scene_usd_path)
+
+        assets_root = str(system_utils.assets_path()) + "/"
+        self.scene_usd = scene_usd_path.removeprefix(assets_root)
+        self.scene_glb = os.path.join(os.path.dirname(self.scene_usd), "compressed_simplified.glb")
+        if "multispace" in self.scene_usd:
+            self.scene_name = self.scene_usd.split("/")[-3] + "/" + self.scene_usd.split("/")[-2]
+        else:
+            self.scene_name = self.scene_usd.split("/")[-2]
+        self.material_changer = material_changer()
+        update_stage()
+
     def pub_depth_camera(self):
         sensors = []
         for camera in self.robot_cfg.cameras:
@@ -1591,10 +1625,11 @@ class APICore:
         init_position=[0, 0, 0],
         init_rotation=[1, 0, 0, 0],
         sub_usd_path="",
+        scene_variant_key=None,
     ):
         scene_usd = str(np.random.choice(scene_usd)) if type(scene_usd) == list else scene_usd
         scene_usd_path = str(system_utils.assets_path()) + "/" + str(scene_usd)
-        scene_key = (robot_cfg, scene_usd_path)
+        scene_key = (robot_cfg, scene_usd_path, scene_variant_key)
 
         # Robot + /World background are loaded once per scene and reused across
         # instances; only /Workspace is swapped. Re-adding the full scene every
@@ -1604,6 +1639,16 @@ class APICore:
         if self._loaded_scene_key == scene_key:
             self._reload_scenes(sub_usd_path)
             self._initialize_all_scene_articulations()
+            return
+
+        # Scenario variants need a fresh /World so authored light values do
+        # not leak between instances. Keep the robot prim and its initialized
+        # articulation when the robot configuration itself is unchanged.
+        if self._loaded_scene_key is not None and self._loaded_scene_key[0] == robot_cfg:
+            self._replace_background_scene(scene_usd_path)
+            self._reload_scenes(sub_usd_path)
+            self._initialize_all_scene_articulations()
+            self._loaded_scene_key = scene_key
             return
 
         self._reload_scenes(sub_usd_path)
@@ -1617,8 +1662,7 @@ class APICore:
             if self._stage.GetPrimAtPath(stale_path).IsValid():
                 delete_prim(stale_path)
         add_reference_to_stage(robot_usd_path, self.robot_cfg.robot_prim_path)
-        add_reference_to_stage(scene_usd_path, "/World")
-        self._filter_objects(scene_usd_path)
+        self._replace_background_scene(scene_usd_path)
         self.usd_objects["robot"] = SingleXFormPrim(
             prim_path=self.robot_cfg.robot_prim_path,
             position=init_position,
@@ -1626,14 +1670,7 @@ class APICore:
         )
         self.robot_init_position = init_position
         self.robot_init_rotation = init_rotation
-        self.scene_usd = scene_usd
-        self.scene_glb = os.path.join(os.path.dirname(scene_usd), "compressed_simplified.glb")
-        if "multispace" in scene_usd:
-            self.scene_name = scene_usd.split("/")[-3] + "/" + scene_usd.split("/")[-2]
-        else:
-            self.scene_name = scene_usd.split("/")[-2]
         self.robot_name = self.robot_cfg.robot_name
-        self.material_changer = material_changer()
         # physics_scene settings
         self.scene = UsdPhysics.Scene.Define(self._stage, Sdf.Path("/physicsScene"))
         self.scene.CreateGravityDirectionAttr().Set(Gf.Vec3f(0.0, 0.0, -1.0))

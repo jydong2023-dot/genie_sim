@@ -268,6 +268,12 @@ TASK_MAPPING = {
         },
         "eval_dims": {"manip": "spatial_pick_place", "cognition": "semantic"},
     },
+    "stack_red_block_on_black_block": {
+        "background": {
+            "G2": "table_task_2_g2_op",
+        },
+        "eval_dims": {"manip": "spatial_pick_place", "cognition": "semantic"},
+    },
     "stock_and_straighten_shelf": {
         "background": {
             "G2": "market_00_g2_op",

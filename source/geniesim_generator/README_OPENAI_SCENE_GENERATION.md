@@ -99,6 +99,16 @@ curl -fsS -X POST \
 /home/user/djy/genie_sim/source/geniesim_generator/src/geniesim_generator/LLM_RESULT.py
 ```
 
+当前保存动作兼容传统 Markdown 代码块，以及 Open WebUI Responses 格式中
+位于 `originalContent` 或 `output_text` 的裸 Python 输出。更新动作源码后，运行：
+
+```bash
+python source/geniesim_generator/scripts/sync_save_action_export.py
+```
+
+然后重新导入并启用生成的 `config/function-save_code_to_file.json`；Open WebUI
+会把导入的动作保存在数据库中，不会自动跟随宿主机源码变化。
+
 检查文件是否已更新：
 
 ```bash

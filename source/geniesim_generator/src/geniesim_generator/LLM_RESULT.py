@@ -1,60 +1,105 @@
-# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
-# Author: Genie Sim Team
-# License: Mozilla Public License Version 2.0
-
 from helper import *
 
 """
-scene_name: tilted_beverage_bottle_scene
-description: Randomly place one of three beverage bottles at specific positions with 30-degree tilt
+scene_name: simple_tabletop_bottle_and_bowl
+description: A transparent beverage bottle stands on the left side of a table,
+and a white bowl rests on the right with a clear, collision-free gap.
 """
 
 
 @register()
-def place_tilted_beverage_bottle() -> Shape:
-    """
-    Randomly select one of three positions and place the corresponding beverage bottle with 30-degree tilt.
-    Position 1: (-0.3258698616779385, -0.961097970731979, 1.1171925071287725) -> genie_beverage_bottle_007
-    Position 2: (-0.3258698616779385, -0.6978373934951332, 1.1171925071287725) -> genie_beverage_bottle_008
-    Position 3: (-0.3258698616779385, -0.46964291938826225, 1.1171925071287725) -> genie_beverage_bottle_009
-    """
-    # Define three position options with corresponding object IDs
-    position_options = [
-        ((-0.3258698616779385, -0.961097970731979, 1.1171925071287725), "genie_beverage_bottle_007"),
-        ((-0.3258698616779385, -0.6978373934951332, 1.1171925071287725), "genie_beverage_bottle_008"),
-        ((-0.3258698616779385, -0.46964291938826225, 1.1171925071287725), "genie_beverage_bottle_009"),
-    ]
-
-    # Randomly select one position and object
-    selected_index = np.random.choice(len(position_options))
-    selected_position, selected_oid = position_options[selected_index]
-
-    # Create beverage bottle object
-    bottle_shape = library_call(
+def tabletop_table() -> Shape:
+    return library_call(
         "usd",
-        oid=selected_oid,
-        keywords=["beverage_bottle", "bottle", "drink", f"bottle_{selected_index + 7}"],
+        oid="table_000",
+        keywords=[
+            "center_white_table",
+            "table",
+            "white",
+            "rectangular",
+            "support_surface",
+            "center",
+        ],
     )
 
-    # Get object center for rotation
-    bottle_center = compute_shape_center(bottle_shape)
 
-    # Apply 30-degree tilt around X-axis (forward tilt)
-    tilt_angle = math.pi / 6  # 30 degrees in radians
-    bottle_shape = transform_shape(
-        bottle_shape, rotation_matrix(angle=tilt_angle, direction=(1, 0, 0), point=bottle_center)
+@register()
+def tabletop_left_bottle() -> Shape:
+    return library_call(
+        "usd",
+        oid="benchmark_beverage_bottle_081",
+        keywords=[
+            "left_transparent_beverage_bottle",
+            "beverage_bottle",
+            "transparent",
+            "plastic",
+            "drink_container",
+            "left",
+        ],
     )
 
-    # Get object info after rotation for proper placement
-    object_info = get_object_info(bottle_shape)
-    object_center = object_info["center"]
 
-    # Translate to selected position
-    final_shape = transform_shape(bottle_shape, translation_matrix(np.array(selected_position) - object_center))
+@register()
+def tabletop_right_bowl() -> Shape:
+    return library_call(
+        "usd",
+        oid="benchmark_bowl_004",
+        keywords=[
+            "right_white_bowl",
+            "bowl",
+            "white",
+            "round",
+            "tableware",
+            "right",
+        ],
+    )
 
-    return final_shape
+
+@register()
+def simple_tabletop_bottle_and_bowl() -> Shape:
+    table = library_call("tabletop_table")
+    bottle = library_call("tabletop_left_bottle")
+    bowl = library_call("tabletop_right_bowl")
+
+    table_info = get_object_info(table)
+    bottle_info = get_object_info(bottle)
+    bowl_info = get_object_info(bowl)
+
+    tabletop_z = table_info["max"][2]
+    center_x = table_info["center"][0]
+    center_y = table_info["center"][1]
+
+    # Scene coordinates: +y is left and -y is right.
+    # The table spans 1.0 m along y. At ±0.25 m, both footprints remain
+    # inside its edges and their bounding boxes have a gap over 0.39 m.
+    bottle_target = np.array([center_x, center_y + 0.25, tabletop_z])
+    bowl_target = np.array([center_x, center_y - 0.25, tabletop_z])
+
+    bottle = transform_shape(
+        bottle,
+        translation_matrix(
+            (
+                bottle_target[0] - bottle_info["center"][0],
+                bottle_target[1] - bottle_info["center"][1],
+                bottle_target[2] - bottle_info["min"][2],
+            )
+        ),
+    )
+
+    bowl = transform_shape(
+        bowl,
+        translation_matrix(
+            (
+                bowl_target[0] - bowl_info["center"][0],
+                bowl_target[1] - bowl_info["center"][1],
+                bowl_target[2] - bowl_info["min"][2],
+            )
+        ),
+    )
+
+    return concat_shapes(table, bottle, bowl)
 
 
 @register()
 def root_scene() -> Shape:
-    return place_tilted_beverage_bottle()
+    return library_call("simple_tabletop_bottle_and_bowl")

@@ -356,6 +356,9 @@ TASK_INFO_DICT = {
     "stack_three_building_blocks": {
         "G2_omnipicker": G2_DEFAULT_STATES,
     },
+    "stack_red_block_on_black_block": {
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
     "sort_cubes_by_size": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G1_120s": G1_DEFAULT_STATES,

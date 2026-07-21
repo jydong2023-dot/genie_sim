@@ -64,6 +64,7 @@ It has been specialized to drive Genie Sim's `ASSETS_INDEX` (from the
 | USD serializer (`gen_scene_usda`) | [`src/geniesim_generator/utils/`](src/geniesim_generator/utils/) |
 | MCP servers + RAG | [`src/geniesim_generator/server/`](src/geniesim_generator/server/) |
 | Open WebUI config exports | [`src/geniesim_generator/config/`](src/geniesim_generator/config/) |
+| Save-action export sync | [`scripts/sync_save_action_export.py`](scripts/sync_save_action_export.py) |
 | Docker stack (MCP + Open WebUI) | [`src/geniesim_generator/compose.yaml`](src/geniesim_generator/compose.yaml) |
 | Deploy / status integration | [`../geniesim_cli/src/geniesim_cli/commands/`](../geniesim_cli/src/geniesim_cli/commands/) (`deploy.py`, `status.py`, `bootstrap.py`) |
 
@@ -82,6 +83,7 @@ It has been specialized to drive Genie Sim's `ASSETS_INDEX` (from the
 - **Asset search (RAG)** → `server/mcp_assets_server.py` → `server/assets_searcher/` (`AssetVectorDB` text, `AssetVectorDBVL` vision-language)
 - **Asset interaction metadata** → `server/mcp_assets_info.py` (reads `ASSETS_INDEX.interaction.{active,passive}`)
 - **LLM file writes** → `server/mcp_file_server.py` (MCP tool) and `server/save_to_local.py` / `config/save_data_gen.py` (Open WebUI actions)
+- **Save Code action changes** → edit `server/save_to_local.py`, then run `python scripts/sync_save_action_export.py` and re-import the generated config into Open WebUI
 
 ---
 
