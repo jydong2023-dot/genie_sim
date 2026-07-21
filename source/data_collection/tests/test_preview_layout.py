@@ -1,3 +1,4 @@
+import ast
 import argparse
 import importlib.util
 import json
@@ -329,6 +330,231 @@ def test_parse_args_uses_positive_float_for_connect_timeout(
     )
     with pytest.raises(SystemExit):
         preview_layout.parse_args()
+
+
+def install_preview_fakes(
+    preview_layout, monkeypatch, tmp_path, *, generate_error_at=None
+):
+    files = [tmp_path / "demo_0.json", tmp_path / "demo_1.json"]
+    for path in files:
+        path.write_text("{}", encoding="utf-8")
+
+    agent_events = []
+    build_calls = []
+    prepare_calls = []
+    sleep_calls = []
+
+    class FakeClient:
+        def __init__(self):
+            self.exit_calls = 0
+
+        def exit(self):
+            self.exit_calls += 1
+
+    class FakeRobot:
+        def __init__(self):
+            self.client = FakeClient()
+            self.open_gripper_calls = []
+
+        def open_gripper(self, *, id, detach):
+            self.open_gripper_calls.append((id, detach))
+
+    class FakeAgent:
+        instances = []
+
+        def __init__(self, robot):
+            self.robot = robot
+            self.generate_count = 0
+            self.instances.append(self)
+            agent_events.append(("construct", robot))
+
+        def reset(self):
+            agent_events.append(("reset",))
+
+        def generate_layout(self, path):
+            self.generate_count += 1
+            agent_events.append(("generate_layout", path))
+            if self.generate_count == generate_error_at:
+                raise generation_error
+
+        def __getattr__(self, name):
+            forbidden = {
+                "run",
+                "start_recording",
+                "stop_recording",
+                "load_task",
+                "execute",
+            }
+            api_kind = "trajectory/planner" if (
+                name in forbidden
+                or "planner" in name.lower()
+                or "trajectory" in name.lower()
+            ) else "unexpected"
+            raise AssertionError(f"preview accessed {api_kind} agent API: {name}")
+
+    robot = FakeRobot()
+    generation_error = RuntimeError("layout generation failed")
+
+    monkeypatch.setattr(
+        preview_layout,
+        "_import_isaac_client",
+        lambda: (FakeAgent, None, None, None),
+    )
+
+    def fake_build_robot(template, client_host):
+        build_calls.append((template, client_host))
+        return robot
+
+    def fake_prepare_instance_file(path, assets_root, rewrite_assets):
+        prepare_calls.append((path, assets_root, rewrite_assets))
+        return path
+
+    monkeypatch.setattr(preview_layout, "build_robot", fake_build_robot)
+    monkeypatch.setattr(
+        preview_layout, "prepare_instance_file", fake_prepare_instance_file
+    )
+    monkeypatch.setattr(preview_layout.time, "sleep", sleep_calls.append)
+
+    return types.SimpleNamespace(
+        files=files,
+        robot=robot,
+        FakeAgent=FakeAgent,
+        generation_error=generation_error,
+        agent_events=agent_events,
+        build_calls=build_calls,
+        prepare_calls=prepare_calls,
+        sleep_calls=sleep_calls,
+    )
+
+
+def preview_kwargs(tmp_path, files, *, gui, save_images):
+    return {
+        "template": {"task": "demo"},
+        "files": files,
+        "client_host": "localhost:50051",
+        "gui": gui,
+        "save_images": save_images,
+        "cameras": [("head", "/World/head_Camera")],
+        "preview_dir": tmp_path / "preview",
+        "assets_root": tmp_path / "assets",
+        "rewrite_assets": False,
+    }
+
+
+def test_preview_instances_gui_loads_layouts_without_collecting_trajectories(
+    preview_layout, monkeypatch, tmp_path
+):
+    fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
+    input_calls = []
+    monkeypatch.setattr("builtins.input", lambda: input_calls.append(None))
+
+    def unexpected_camera_call(*args, **kwargs):
+        pytest.fail("save_images=False must not access camera RPCs")
+
+    monkeypatch.setattr(preview_layout, "capture_cameras", unexpected_camera_call)
+    monkeypatch.setattr(preview_layout, "save_preview_images", unexpected_camera_call)
+
+    preview_layout.preview_instances(
+        **preview_kwargs(tmp_path, fakes.files, gui=True, save_images=False)
+    )
+
+    assert fakes.build_calls == [({"task": "demo"}, "localhost:50051")]
+    assert len(fakes.FakeAgent.instances) == 1
+    assert fakes.agent_events == [
+        ("construct", fakes.robot),
+        ("reset",),
+        ("generate_layout", str(fakes.files[0])),
+        ("reset",),
+        ("generate_layout", str(fakes.files[1])),
+    ]
+    assert fakes.prepare_calls == [
+        (path, tmp_path / "assets", False) for path in fakes.files
+    ]
+    assert fakes.sleep_calls == [0.5, 1.0, 0.5, 1.0]
+    assert input_calls == [None, None]
+    assert fakes.robot.open_gripper_calls == [
+        ("right", False),
+        ("left", False),
+        ("right", False),
+        ("left", False),
+    ]
+    assert fakes.robot.client.exit_calls == 1
+
+
+def test_preview_instances_without_gui_saves_each_layout_without_waiting_for_input(
+    preview_layout, monkeypatch, tmp_path
+):
+    fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
+
+    def unexpected_input():
+        pytest.fail("non-GUI preview must not wait for input")
+
+    saved = []
+    monkeypatch.setattr("builtins.input", unexpected_input)
+    monkeypatch.setattr(
+        preview_layout,
+        "save_preview_images",
+        lambda robot, cameras, preview_dir, stem: saved.append(
+            (robot, cameras, preview_dir, stem)
+        ),
+    )
+
+    preview_layout.preview_instances(
+        **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=True)
+    )
+
+    assert [call[3] for call in saved] == ["demo_0", "demo_1"]
+    assert all(
+        call[:3]
+        == (
+            fakes.robot,
+            [("head", "/World/head_Camera")],
+            tmp_path / "preview",
+        )
+        for call in saved
+    )
+    assert fakes.agent_events[1:] == [
+        ("reset",),
+        ("generate_layout", str(fakes.files[0])),
+        ("reset",),
+        ("generate_layout", str(fakes.files[1])),
+    ]
+    assert fakes.robot.client.exit_calls == 1
+
+
+def test_preview_instances_exits_once_and_propagates_layout_error(
+    preview_layout, monkeypatch, tmp_path
+):
+    fakes = install_preview_fakes(
+        preview_layout, monkeypatch, tmp_path, generate_error_at=2
+    )
+
+    with pytest.raises(RuntimeError, match="layout generation failed") as exc_info:
+        preview_layout.preview_instances(
+            **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=False)
+        )
+
+    assert exc_info.value is fakes.generation_error
+    assert fakes.agent_events[1:] == [
+        ("reset",),
+        ("generate_layout", str(fakes.files[0])),
+        ("reset",),
+        ("generate_layout", str(fakes.files[1])),
+    ]
+    assert fakes.robot.client.exit_calls == 1
+
+
+def test_preview_script_has_no_trajectory_collection_calls():
+    tree = ast.parse(SCRIPT_PATH.read_text(encoding="utf-8"))
+    called_attributes = {
+        node.func.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+    }
+
+    assert called_attributes.isdisjoint(
+        {"run", "start_recording", "stop_recording", "load_task"}
+    )
 
 
 def make_main_args(tmp_path, *, layout_only):
