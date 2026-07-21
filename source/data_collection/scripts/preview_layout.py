@@ -29,11 +29,14 @@ python scripts/preview_layout.py --headless --save-images \\
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import os
+import re
 import socket
 import sys
+import tempfile
 import time
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -139,7 +142,13 @@ def parse_args() -> argparse.Namespace:
         help="Where to write generated layout JSONs and preview images",
     )
     p.add_argument("--num-episodes", type=int, default=None, help="Override template num_of_episode")
-    p.add_argument("--skip-generate", action="store_true", help="Reuse existing layouts under output-dir/<task>/")
+    generation = p.add_mutually_exclusive_group()
+    generation.add_argument("--skip-generate", action="store_true", help="Reuse existing layouts under output-dir/<task>/")
+    generation.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace a non-empty output-dir/<task>/ when generating layouts",
+    )
     p.add_argument("--layout-only", action="store_true", help="Only generate layouts; do not connect to Isaac")
     mode = p.add_mutually_exclusive_group()
     mode.add_argument("--gui", action="store_true", default=False, help="Interactive Isaac GUI preview (default if not --headless)")
@@ -206,17 +215,61 @@ def rewrite_asset_paths_relative(task_info: dict, assets_root: Path) -> dict:
     return task_info
 
 
-def generate_layouts(template_path: Path, output_dir: Path, num_episodes: int | None) -> tuple[dict, Path, list[Path]]:
+def resolve_save_path(output_dir: Path, task_name: object) -> Path:
+    if (
+        not isinstance(task_name, str)
+        or not task_name.strip()
+        or task_name in {".", ".."}
+        or "/" in task_name
+        or "\\" in task_name
+        or Path(task_name).is_absolute()
+    ):
+        raise PreviewError(f"Invalid task name for preview output: {task_name!r}")
+
+    output_root = output_dir.expanduser().resolve()
+    save_path = (output_root / task_name).resolve()
+    if save_path == output_root or output_root not in save_path.parents:
+        raise PreviewError(
+            f"Resolved task output must be inside output directory: {save_path}"
+        )
+    return save_path
+
+
+def discover_layout_files(save_path: Path, task_name: str) -> list[Path]:
+    if not save_path.is_dir():
+        return []
+    pattern = re.compile(rf"{re.escape(task_name)}_(\d+)\.json")
+    matches = []
+    for path in save_path.iterdir():
+        match = pattern.fullmatch(path.name)
+        if match and path.is_file():
+            matches.append((int(match.group(1)), path.name, path))
+    return [path for _, _, path in sorted(matches)]
+
+
+def generate_layouts(
+    template_path: Path,
+    output_dir: Path,
+    num_episodes: int | None,
+    overwrite: bool = False,
+) -> tuple[dict, Path, list[Path]]:
     with open(template_path, "r", encoding="utf-8") as f:
         task_info = json.load(f)
     task_name = task_info["task"]
+    save_path = resolve_save_path(output_dir, task_name)
+    if save_path.exists() and (
+        not save_path.is_dir() or any(save_path.iterdir())
+    ) and not overwrite:
+        raise PreviewError(
+            f"Layout destination is not empty: {save_path}. "
+            "Use --skip-generate to reuse it or --overwrite to replace it."
+        )
     if num_episodes is None:
         num_episodes = int(task_info.get("recording_setting", {}).get("num_of_episode", 1))
-    save_path = output_dir / task_name
     logger.info(f"Generating {num_episodes} layouts -> {save_path}")
-    tg = TaskGenerator(task_info)
+    tg = TaskGenerator(copy.deepcopy(task_info))
     tg.generate_tasks(save_path=str(save_path), task_num=num_episodes, task_name=task_name)
-    files = sorted(save_path.glob(f"{task_name}_*.json"))
+    files = discover_layout_files(save_path, task_name)
     return task_info, save_path, files
 
 
@@ -224,8 +277,8 @@ def discover_layouts(template_path: Path, output_dir: Path) -> tuple[dict, Path,
     with open(template_path, "r", encoding="utf-8") as f:
         task_info = json.load(f)
     task_name = task_info["task"]
-    save_path = output_dir / task_name
-    files = sorted(save_path.glob(f"{task_name}_*.json"))
+    save_path = resolve_save_path(output_dir, task_name)
+    files = discover_layout_files(save_path, task_name)
     if not files:
         raise FileNotFoundError(f"No layouts in {save_path}; omit --skip-generate first")
     return task_info, save_path, files
@@ -357,17 +410,22 @@ def build_robot(template: dict, client_host: str):
     )
 
 
-def prepare_instance_file(src: Path, assets_root: Path, rewrite: bool) -> Path:
-    """Optionally rewrite asset paths; write a temp sibling used for loading."""
+def prepare_instance_file(
+    src: Path,
+    assets_root: Path,
+    rewrite: bool,
+    temporary_dir: Path,
+) -> Path:
+    """Optionally rewrite asset paths into a caller-owned temporary directory."""
+    if not rewrite:
+        return src
     with open(src, "r", encoding="utf-8") as f:
         task_info = json.load(f)
-    if rewrite:
-        rewrite_asset_paths_relative(task_info, assets_root)
-        out = src.with_name(src.stem + "_server.json")
-        with open(out, "w", encoding="utf-8") as f:
-            json.dump(task_info, f, indent=2)
-        return out
-    return src
+    rewrite_asset_paths_relative(task_info, assets_root)
+    out = temporary_dir / f"{src.stem}_server.json"
+    with open(out, "w", encoding="utf-8") as f:
+        json.dump(task_info, f, indent=2)
+    return out
 
 
 def preview_instances(
@@ -387,36 +445,40 @@ def preview_instances(
     robot = build_robot(template, client_host)
 
     try:
-        agent = DataCollectionAgent(robot)
-        for i, path in enumerate(files):
-            load_path = prepare_instance_file(path, assets_root, rewrite_assets)
-            logger.info(f"[{i+1}/{len(files)}] Loading layout {path.name}")
-            agent.reset()
-            time.sleep(0.5)
-            agent.generate_layout(str(load_path))
-            try:
-                robot.open_gripper(id="right", detach=False)
-                robot.open_gripper(id="left", detach=False)
-            except Exception as e:
-                logger.warning(f"open_gripper skipped: {e}")
-            time.sleep(1.0)
-
-            if save_images and cameras:
-                save_preview_images(robot, cameras, preview_dir, path.stem)
-
-            if gui:
-                print(
-                    f"\n=== Preview ready: {path.name} ===\n"
-                    f"Inspect the Isaac Sim window, then press Enter for next "
-                    f"(or Ctrl-C to stop)...",
-                    flush=True,
+        with tempfile.TemporaryDirectory(prefix="geniesim-preview-") as temp_dir:
+            temporary_dir = Path(temp_dir)
+            agent = DataCollectionAgent(robot)
+            for i, path in enumerate(files):
+                load_path = prepare_instance_file(
+                    path, assets_root, rewrite_assets, temporary_dir
                 )
+                logger.info(f"[{i+1}/{len(files)}] Loading layout {path.name}")
+                agent.reset()
+                time.sleep(0.5)
+                agent.generate_layout(str(load_path))
                 try:
-                    input()
-                except EOFError:
-                    break
-            else:
-                logger.info(f"Headless preview done for {path.name}")
+                    robot.open_gripper(id="right", detach=False)
+                    robot.open_gripper(id="left", detach=False)
+                except Exception as e:
+                    logger.warning(f"open_gripper skipped: {e}")
+                time.sleep(1.0)
+
+                if save_images and cameras:
+                    save_preview_images(robot, cameras, preview_dir, path.stem)
+
+                if gui:
+                    print(
+                        f"\n=== Preview ready: {path.name} ===\n"
+                        f"Inspect the Isaac Sim window, then press Enter for next "
+                        f"(or Ctrl-C to stop)...",
+                        flush=True,
+                    )
+                    try:
+                        input()
+                    except EOFError:
+                        break
+                else:
+                    logger.info(f"Headless preview done for {path.name}")
     finally:
         try:
             channel = getattr(robot.client, "channel", None)
@@ -439,7 +501,12 @@ def main() -> int:
     if args.skip_generate:
         template, save_path, files = discover_layouts(template_path, output_dir)
     else:
-        template, save_path, files = generate_layouts(template_path, output_dir, args.num_episodes)
+        template, save_path, files = generate_layouts(
+            template_path,
+            output_dir,
+            args.num_episodes,
+            overwrite=args.overwrite,
+        )
 
     try:
         files = select_files(files, args.instance_ids)

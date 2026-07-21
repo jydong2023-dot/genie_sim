@@ -106,6 +106,183 @@ def test_generate_layouts_uses_template_episode_count_and_sorts_files(
     assert [path.name for path in files] == ["demo_0.json", "demo_1.json"]
 
 
+@pytest.mark.parametrize(
+    "task_name",
+    ["", ".", "..", "../escape", "nested/task", r"nested\task"],
+)
+def test_generate_layouts_rejects_unsafe_task_names_before_constructing_generator(
+    preview_layout, tmp_path, task_name
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path, task=task_name)
+    constructed = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            constructed.append(task_info)
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    with pytest.raises(preview_layout.PreviewError, match="task"):
+        preview_layout.generate_layouts(template_path, tmp_path / "output", None)
+
+    assert constructed == []
+
+
+def test_generate_layouts_rejects_absolute_task_before_constructing_generator(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path, task=str(tmp_path / "absolute"))
+    constructed = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            constructed.append(task_info)
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    with pytest.raises(preview_layout.PreviewError, match="task"):
+        preview_layout.generate_layouts(template_path, tmp_path / "output", None)
+
+    assert constructed == []
+
+
+def test_generate_layouts_rejects_resolved_destination_outside_output_dir(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path)
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (output_dir / "demo").symlink_to(outside, target_is_directory=True)
+    constructed = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            constructed.append(task_info)
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    with pytest.raises(preview_layout.PreviewError, match="output"):
+        preview_layout.generate_layouts(template_path, output_dir, None)
+
+    assert constructed == []
+
+
+def test_generate_layouts_refuses_nonempty_destination_without_overwrite(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path)
+    save_path = tmp_path / "output" / "demo"
+    save_path.mkdir(parents=True)
+    marker = save_path / "keep.txt"
+    marker.write_text("keep", encoding="utf-8")
+    constructed = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            constructed.append(task_info)
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    with pytest.raises(preview_layout.PreviewError) as exc_info:
+        preview_layout.generate_layouts(template_path, tmp_path / "output", None)
+
+    assert "--skip-generate" in str(exc_info.value)
+    assert "--overwrite" in str(exc_info.value)
+    assert marker.read_text(encoding="utf-8") == "keep"
+    assert constructed == []
+
+
+def test_generate_layouts_allows_empty_destination_without_overwrite(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path)
+    save_path = tmp_path / "output" / "demo"
+    save_path.mkdir(parents=True)
+    constructed = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            constructed.append(task_info)
+
+        def generate_tasks(self, *, save_path, task_num, task_name):
+            Path(save_path, f"{task_name}_0.json").write_text("{}", encoding="utf-8")
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    _, _, files = preview_layout.generate_layouts(
+        template_path, tmp_path / "output", None
+    )
+
+    assert len(constructed) == 1
+    assert files == [save_path / "demo_0.json"]
+
+
+def test_generate_layouts_overwrite_allows_generator_to_replace_nonempty_destination(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path)
+    save_path = tmp_path / "output" / "demo"
+    save_path.mkdir(parents=True)
+    marker = save_path / "old.json"
+    marker.write_text("old", encoding="utf-8")
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            pass
+
+        def generate_tasks(self, *, save_path, task_num, task_name):
+            destination = Path(save_path)
+            marker.unlink()
+            (destination / "demo_0.json").write_text("{}", encoding="utf-8")
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    _, _, files = preview_layout.generate_layouts(
+        template_path, tmp_path / "output", None, overwrite=True
+    )
+
+    assert files == [save_path / "demo_0.json"]
+
+
+def test_generate_layouts_passes_deep_copy_to_mutating_generator(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    expected = write_template(template_path)
+    generator_inputs = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            generator_inputs.append(task_info)
+            task_info["task"] = "mutated"
+            task_info["recording_setting"]["num_of_episode"] = 99
+
+        def generate_tasks(self, *, save_path, task_num, task_name):
+            Path(save_path).mkdir(parents=True, exist_ok=True)
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    template, _, _ = preview_layout.generate_layouts(
+        template_path, tmp_path / "output", None
+    )
+
+    assert template == expected
+    assert generator_inputs[0] == {
+        "task": "mutated",
+        "recording_setting": {"num_of_episode": 99},
+    }
+    assert generator_inputs[0] is not template
+    assert generator_inputs[0]["recording_setting"] is not template["recording_setting"]
+
+
 def test_generate_layouts_explicit_episode_count_overrides_template(
     preview_layout, tmp_path
 ):
@@ -141,7 +318,16 @@ def test_discover_layouts_sorts_existing_layouts(preview_layout, tmp_path):
     template = write_template(template_path)
     save_path = tmp_path / "output" / "demo"
     save_path.mkdir(parents=True)
-    for name in ("demo_10.json", "demo_02.json", "demo_01.json"):
+    for name in (
+        "demo_10.json",
+        "demo_2.json",
+        "demo_1.json",
+        "demo_0.json",
+        "demo_server.json",
+        "demo_server_server.json",
+        "demo_3.json.backup",
+        "other_4.json",
+    ):
         (save_path / name).write_text("{}", encoding="utf-8")
 
     task_info, discovered_path, files = preview_layout.discover_layouts(
@@ -150,7 +336,12 @@ def test_discover_layouts_sorts_existing_layouts(preview_layout, tmp_path):
 
     assert task_info == template
     assert discovered_path == save_path
-    assert [path.name for path in files] == ["demo_01.json", "demo_02.json", "demo_10.json"]
+    assert [path.name for path in files] == [
+        "demo_0.json",
+        "demo_1.json",
+        "demo_2.json",
+        "demo_10.json",
+    ]
 
 
 def test_select_files_matches_comma_separated_numeric_suffixes(preview_layout):
@@ -332,6 +523,57 @@ def test_parse_args_uses_positive_float_for_connect_timeout(
         preview_layout.parse_args()
 
 
+def test_parse_args_supports_overwrite(preview_layout, monkeypatch):
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT_PATH), "--overwrite"])
+
+    args = preview_layout.parse_args()
+
+    assert args.overwrite is True
+
+
+def test_parse_args_rejects_overwrite_with_skip_generate(preview_layout, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [str(SCRIPT_PATH), "--overwrite", "--skip-generate"],
+    )
+
+    with pytest.raises(SystemExit):
+        preview_layout.parse_args()
+
+
+def test_prepare_instance_file_writes_rewrite_only_in_temporary_directory(
+    preview_layout, tmp_path
+):
+    src = tmp_path / "demo_0.json"
+    src.write_text(json.dumps({"objects": []}), encoding="utf-8")
+    temporary_dir = tmp_path / "temporary"
+    temporary_dir.mkdir()
+
+    derived = preview_layout.prepare_instance_file(
+        src, tmp_path / "assets", True, temporary_dir
+    )
+
+    assert derived == temporary_dir / "demo_0_server.json"
+    assert derived.is_file()
+    assert not src.with_name("demo_0_server.json").exists()
+
+
+def test_prepare_instance_file_without_rewrite_returns_source_and_creates_nothing(
+    preview_layout, tmp_path
+):
+    src = tmp_path / "demo_0.json"
+    src.write_text(json.dumps({"objects": []}), encoding="utf-8")
+    temporary_dir = tmp_path / "temporary"
+
+    result = preview_layout.prepare_instance_file(
+        src, tmp_path / "assets", False, temporary_dir
+    )
+
+    assert result == src
+    assert not temporary_dir.exists()
+
+
 def install_preview_fakes(
     preview_layout,
     monkeypatch,
@@ -348,6 +590,7 @@ def install_preview_fakes(
     agent_events = []
     build_calls = []
     prepare_calls = []
+    temporary_dirs = []
     sleep_calls = []
 
     class FakeChannel:
@@ -423,9 +666,15 @@ def install_preview_fakes(
         build_calls.append((template, client_host))
         return robot
 
-    def fake_prepare_instance_file(path, assets_root, rewrite_assets):
-        prepare_calls.append((path, assets_root, rewrite_assets))
-        return path
+    def fake_prepare_instance_file(path, assets_root, rewrite_assets, temporary_dir):
+        temporary_dir = Path(temporary_dir)
+        temporary_dirs.append(temporary_dir)
+        prepare_calls.append((path, assets_root, rewrite_assets, temporary_dir))
+        if not rewrite_assets:
+            return path
+        derived = temporary_dir / f"{path.stem}_server.json"
+        derived.write_text("{}", encoding="utf-8")
+        return derived
 
     monkeypatch.setattr(preview_layout, "build_robot", fake_build_robot)
     monkeypatch.setattr(
@@ -441,6 +690,7 @@ def install_preview_fakes(
         agent_events=agent_events,
         build_calls=build_calls,
         prepare_calls=prepare_calls,
+        temporary_dirs=temporary_dirs,
         sleep_calls=sleep_calls,
     )
 
@@ -489,8 +739,11 @@ def test_preview_instances_gui_loads_layouts_without_collecting_trajectories(
         ("input",),
     ]
     assert fakes.prepare_calls == [
-        (path, tmp_path / "assets", False) for path in fakes.files
+        (path, tmp_path / "assets", False, fakes.temporary_dirs[0])
+        for path in fakes.files
     ]
+    assert len(set(fakes.temporary_dirs)) == 1
+    assert not fakes.temporary_dirs[0].exists()
     assert fakes.robot.client.channel.close_calls == 1
 
 
@@ -555,6 +808,29 @@ def test_preview_instances_closes_channel_once_and_propagates_layout_error(
         ("generate_layout", str(fakes.files[1])),
     ]
     assert fakes.robot.client.channel.close_calls == 1
+    assert len(set(fakes.temporary_dirs)) == 1
+    assert not fakes.temporary_dirs[0].exists()
+
+
+def test_preview_instances_isolates_rewritten_files_and_cleans_them(
+    preview_layout, monkeypatch, tmp_path
+):
+    fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
+    kwargs = preview_kwargs(tmp_path, fakes.files, gui=False, save_images=False)
+    kwargs["rewrite_assets"] = True
+
+    preview_layout.preview_instances(**kwargs)
+
+    assert len(set(fakes.temporary_dirs)) == 1
+    temporary_dir = fakes.temporary_dirs[0]
+    assert not temporary_dir.exists()
+    assert not list(tmp_path.glob("*_server.json"))
+    generated_paths = [
+        Path(event[1])
+        for event in fakes.agent_events
+        if event[0] == "generate_layout"
+    ]
+    assert all(path.parent == temporary_dir for path in generated_paths)
 
 
 def test_preview_instances_closes_channel_once_when_agent_construction_fails(
@@ -664,6 +940,7 @@ def make_main_args(tmp_path, *, layout_only):
         output_dir=tmp_path / "output",
         num_episodes=None,
         skip_generate=True,
+        overwrite=False,
         layout_only=layout_only,
         gui=False,
         headless=False,
