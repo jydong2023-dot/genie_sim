@@ -59,3 +59,4 @@ logs
 MUJOCO_LOG.TXT
 
 .claude
+.worktrees/
