@@ -12,6 +12,7 @@ A data collection system for robotic simulation tasks using Isaac Sim and cuRobo
     - [Interactive Mode](#interactive-mode)
   - [Option 2: Local Deployment](#option-2-local-deployment)
 - [Usage Examples](#usage-examples)
+  - [Layout generation and Isaac preview (no trajectory collection)](#layout-generation-and-isaac-preview-no-trajectory-collection)
   - [Docker - Automated Data Collection](#docker-automated-data-collection)
   - [Docker - Interactive Development](#docker-interactive-development)
   - [Local - Full Control](#local-full-control)
@@ -250,6 +251,55 @@ python scripts/run_data_collection.py --task_template tasks/geniesim_2025/sort_f
 ```
 
 ## Usage Examples
+
+### Layout generation and Isaac preview (no trajectory collection)
+
+This workflow generates task layouts and loads them into an already-running
+Isaac Sim window for inspection. Start the server yourself first: the preview
+script does not start or stop Isaac Sim, Docker, or the server process. Use two
+terminals in `source/data_collection`, with `SIM_ASSETS` set to the correct
+asset root (or with `geniesim_assets` installed editable so the script can
+resolve it).
+
+**Terminal 1 - start the GUI server:**
+
+```bash
+cd /home/user/djy/genie_sim/source/data_collection
+export SIM_ASSETS=/path/to/geniesim_assets
+python scripts/data_collector_server.py --enable_physics
+```
+
+Layout preview only needs physics. Do not add `--enable_curobo` or
+`--publish_ros`: the workflow performs neither motion planning nor recording.
+
+**Terminal 2 - generate and preview two layouts:**
+
+```bash
+cd /home/user/djy/genie_sim/source/data_collection
+export SIM_ASSETS=/path/to/geniesim_assets
+python scripts/preview_layout.py --gui \
+  --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
+  --output-dir /home/user/djy/genie_sim/output \
+  --num-episodes 2
+```
+
+The script calls `TaskGenerator.generate_tasks()`, then uses gRPC `reset()` and
+`generate_layout()` to load each generated scene, and waits while you inspect
+the Isaac Sim window. It never calls `agent.run()` or `start_recording()`, and
+does not execute trajectory planning.
+
+The default server endpoint is `localhost:50051`. If it is unavailable, the
+script fails fast after `--connect-timeout` (default: 5 seconds) and prints the
+server command above. Useful variants:
+
+- `--layout-only` generates layouts without connecting to Isaac Sim.
+- `--skip-generate` reuses layouts already under the task's output directory.
+- `--instance-ids 0,2` previews only the selected generated instance indices.
+- `--client-host HOST:PORT` selects another endpoint.
+- `--headless` loads scenes without waiting for input and saves camera images;
+  `--save-images` explicitly enables image saving during GUI preview.
+- `--keep-absolute-assets` keeps absolute asset paths when the server can
+  resolve them directly.
 
 ### Docker - Automated Data Collection
 

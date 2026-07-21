@@ -153,7 +153,7 @@ tasks/<collection>/<task>/<robot>/<name>.json
 |---|---|
 | Task templates | [`tasks/geniesim_2025/<task>/<g1\|g2>/*.json`](tasks/) |
 | Server / client entries | [`scripts/data_collector_server.py`](scripts/), [`scripts/run_data_collection.py`](scripts/) |
-| Layout-only preview (no trajectory) | [`scripts/preview_layout.py`](scripts/preview_layout.py) · design: [`docs/superpowers/specs/2026-07-21-layout-preview-design.md`](docs/superpowers/specs/2026-07-21-layout-preview-design.md) |
+| Layout generation + Isaac preview (no trajectory) | [`scripts/preview_layout.py`](scripts/preview_layout.py) · design: [`docs/superpowers/specs/2026-07-21-layout-preview-design.md`](docs/superpowers/specs/2026-07-21-layout-preview-design.md) |
 | Orchestrators | [`scripts/run_data_collection.sh`](scripts/) (one-shot), [`scripts/start_gui.sh`](scripts/) (interactive), [`scripts/*entrypoint*.sh`](scripts/) |
 | Robot / cuRobo configs | [`config/robot_cfg/{G1,G2}*.json`](config/), [`config/curobo/configs/`](config/curobo/) |
 | aimdk protocol | [`common/aimdk/protocol/`](common/aimdk/) |
@@ -169,6 +169,53 @@ geniesim autocollect run sort_the_fruit_into_the_box_apple_g2 --headless --stand
 # preview without launching:
 geniesim autocollect run apple_g2 --dry-run
 ```
+
+### Generate layouts and preview them in Isaac (no trajectory collection)
+
+This is a manually orchestrated, two-terminal workflow. Both terminals must be
+in `source/data_collection` with `SIM_ASSETS` pointing at the correct asset
+root (or `geniesim_assets` installed editable). Start the GUI server yourself
+in Terminal 1:
+
+```bash
+python scripts/data_collector_server.py --enable_physics
+```
+
+Then generate and load layouts from Terminal 2:
+
+```bash
+python scripts/preview_layout.py --gui \
+  --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
+  --output-dir /home/user/djy/genie_sim/output \
+  --num-episodes 2
+```
+
+Only `--enable_physics` is needed on the server: this path does not collect
+trajectories, record data, use cuRobo, or require a ROS publisher. The preview
+script does not manage the server, Isaac Sim, or Docker lifecycle. Its control
+flow is `TaskGenerator.generate_tasks()` → gRPC `reset()` /
+`generate_layout()` → wait for inspection in the Isaac GUI; it never calls
+`agent.run()`, `start_recording()`, or the trajectory planner.
+
+The default gRPC endpoint is `localhost:50051`. A missing server fails fast
+after the connection timeout and reports the exact `--enable_physics` command.
+`preview_layout.py` accepts the complete CLI surface below:
+
+| Flag | Effect |
+|---|---|
+| `--task-template PATH` | Source task JSON; defaults to the G2 apple sorting task shown above. |
+| `--output-dir DIR` | Root for generated layout JSONs and preview images. |
+| `--num-episodes N` | Override the template's `recording_setting.num_of_episode`. |
+| `--skip-generate` | Reuse existing layouts under `output-dir/<task>/`. |
+| `--instance-ids IDS` | Preview only comma-separated generated indices, for example `0,2`. |
+| `--client-host HOST:PORT` | gRPC endpoint (default `localhost:50051`). |
+| `--connect-timeout SECONDS` | Positive server connection timeout (default 5 seconds). |
+| `--layout-only` | Generate/reuse layouts without connecting to Isaac. |
+| `--gui` | Wait for Enter between layouts in the Isaac window; this is the default mode unless `--headless` or `--layout-only` is set. |
+| `--headless` | Load each scene without waiting and save resolved camera images. |
+| `--save-images` | Save resolved robot camera PNGs (also implied by `--headless`). |
+| `--cameras NAMES` | Comma-separated camera aliases to capture (default `head,left_hand,right_hand`). |
+| `--keep-absolute-assets` | Keep absolute asset paths instead of rewriting them relative to `SIM_ASSETS`. |
 
 ### Discover tasks
 
