@@ -52,20 +52,25 @@ class IsaacSimRpcRobot(Robot):
             if len(robot_joint_names) != len(robot_init_arm_pose):
                 raise ValueError("robot_init_arm_pose length does not match joint_names length")
             robot_init_arm_pose = {robot_joint_names[i]: robot_init_arm_pose[i] for i in range(len(robot_joint_names))}
-        self.client = RpcClient(
+        client = RpcClient(
             client_host, robot_urdf, connect_timeout=connect_timeout
         )
-        self.client.init_robot(
-            robot_cfg=robot_cfg,
-            robot_usd="",
-            scene_usd=scene_usd,
-            init_position=position,
-            init_rotation=rotation,
-            stand_type=stand_type,
-            stand_size_x=stand_size_x,
-            stand_size_y=stand_size_y,
-            robot_init_arm_pose=robot_init_arm_pose,
-        )
+        self.client = client
+        try:
+            client.init_robot(
+                robot_cfg=robot_cfg,
+                robot_usd="",
+                scene_usd=scene_usd,
+                init_position=position,
+                init_rotation=rotation,
+                stand_type=stand_type,
+                stand_size_x=stand_size_x,
+                stand_size_y=stand_size_y,
+                robot_init_arm_pose=robot_init_arm_pose,
+            )
+        except BaseException:
+            client.channel.close()
+            raise
         self.cam_info = None
         if "omnipicker" in robot_cfg:
             self.robot_gripper_2_grasp_gripper = np.array([[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]])

@@ -70,13 +70,20 @@ def _get_task_generator_class():
 def _import_isaac_client():
     """Lazy import: pinocchio / gRPC only needed when talking to Isaac."""
     from client.agent.omniagent import DataCollectionAgent
+    from client.robot.client import RpcConnectionError
     from client.robot.omni_robot import IsaacSimRpcRobot
     from common.aimdk.protocol.sim import (
         sim_observation_service_pb2,
         sim_observation_service_pb2_grpc,
     )
 
-    return DataCollectionAgent, IsaacSimRpcRobot, sim_observation_service_pb2, sim_observation_service_pb2_grpc
+    return (
+        DataCollectionAgent,
+        IsaacSimRpcRobot,
+        sim_observation_service_pb2,
+        sim_observation_service_pb2_grpc,
+        RpcConnectionError,
+    )
 
 CAMERA_ALIAS = {
     "head_front_Camera": "head",
@@ -558,7 +565,9 @@ def resolve_camera_prims(template: dict, aliases: str) -> list[tuple[str, str]]:
 
 
 def capture_cameras(robot, camera_prims: list[str]) -> list[np.ndarray | None]:
-    _, _, sim_observation_service_pb2, sim_observation_service_pb2_grpc = _import_isaac_client()
+    _, _, sim_observation_service_pb2, sim_observation_service_pb2_grpc, _ = (
+        _import_isaac_client()
+    )
     stub = sim_observation_service_pb2_grpc.SimObservationServiceStub(robot.client.channel)
     req = sim_observation_service_pb2.GetObservationReq()
     req.isCam = True
@@ -602,27 +611,49 @@ def save_preview_images(
     out_dir.mkdir(parents=True, exist_ok=True)
     prims = [p for _, p in cameras]
     images = capture_cameras(robot, prims)
-    written = {}
-    for (alias, _prim), img in zip(cameras, images):
-        if img is None:
-            logger.warning(f"No image for camera {alias}")
-            continue
-        name = f"{alias}.png" if instance_stem.endswith("_0") or instance_stem.endswith("0") else f"{alias}_{instance_stem.rsplit('_', 1)[-1]}.png"
-        # Prefer stable names: head.png for id0, head_01.png for id1, ...
-        idx = instance_stem.rsplit("_", 1)[-1]
-        if idx.isdigit():
-            name = f"{alias}.png" if int(idx) == 0 else f"{alias}_{int(idx):02d}.png"
-        path = out_dir / name
-        bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        if not cv2.imwrite(str(path), bgr):
-            raise PreviewError(f"Failed to write preview image: {path}")
-        written[alias] = str(path)
+    aliases = [alias for alias, _ in cameras]
+    if len(images) != len(cameras):
+        raise PreviewError(
+            f"Camera response count mismatch for aliases {aliases}: "
+            f"expected {len(cameras)}, got {len(images)}"
+        )
+    missing = [alias for (alias, _), image in zip(cameras, images) if image is None]
+    if missing:
+        raise PreviewError(f"Missing camera images for aliases: {', '.join(missing)}")
+
+    pending = []
+    with tempfile.TemporaryDirectory(prefix=".preview-images-", dir=out_dir) as temp_dir:
+        temp_path = Path(temp_dir)
+        for (alias, _prim), img in zip(cameras, images):
+            idx = instance_stem.rsplit("_", 1)[-1]
+            name = f"{alias}.png"
+            if idx.isdigit() and int(idx) != 0:
+                name = f"{alias}_{int(idx):02d}.png"
+            final_path = out_dir / name
+            staged_path = temp_path / name
+            bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            try:
+                saved = cv2.imwrite(str(staged_path), bgr)
+            except Exception as exc:
+                raise PreviewError(
+                    f"Failed to write preview image: {final_path}"
+                ) from exc
+            if not saved:
+                raise PreviewError(f"Failed to write preview image: {final_path}")
+            pending.append((alias, staged_path, final_path))
+
+        for _alias, staged_path, final_path in pending:
+            os.replace(staged_path, final_path)
+
+    written = {alias: str(final_path) for alias, _, final_path in pending}
+    for path in written.values():
         logger.info(f"Saved {path}")
     return written
 
 
 def build_robot(template: dict, client_host: str, connect_timeout: float):
-    _, IsaacSimRpcRobot, _, _ = _import_isaac_client()
+    deadline = time.monotonic() + connect_timeout
+    _, IsaacSimRpcRobot, _, _, _ = _import_isaac_client()
     tg = _get_task_generator_class()(template)
     robot_position = tg.robot_init_pose["position"]
     robot_rotation = tg.robot_init_pose["quaternion"]
@@ -635,11 +666,14 @@ def build_robot(template: dict, client_host: str, connect_timeout: float):
         scene_usd = scene_usd[0]
     robot_init_arm_pose = template["robot"].get("init_arm_pose")
     robot_init_arm_pose_noise = template["robot"].get("init_arm_pose_noise")
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise PreviewError("Preview connection timeout expired before robot construction")
     return IsaacSimRpcRobot(
         robot_cfg=robot_cfg,
         scene_usd=scene_usd,
         client_host=client_host,
-        connect_timeout=connect_timeout,
+        connect_timeout=remaining,
         position=robot_position,
         rotation=robot_rotation,
         stand_type=stand["stand_type"],
@@ -681,13 +715,16 @@ def preview_instances(
     assets_root: Path,
     rewrite_assets: bool,
 ) -> int:
-    DataCollectionAgent, _, _, _ = _import_isaac_client()
-    import grpc
+    deadline = time.monotonic() + connect_timeout
+    DataCollectionAgent, _, _, _, RpcConnectionError = _import_isaac_client()
 
     logger.info(f"Connecting to Isaac server at {client_host}")
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise PreviewError("Preview connection timeout expired before robot construction")
     try:
-        robot = build_robot(template, client_host, connect_timeout)
-    except (grpc.FutureTimeoutError, grpc.RpcError) as exc:
+        robot = build_robot(template, client_host, remaining)
+    except RpcConnectionError as exc:
         raise PreviewError(
             f"Cannot connect to preview server at {client_host}. Start it with: "
             "python scripts/data_collector_server.py --enable_physics"
@@ -763,7 +800,11 @@ def main() -> int:
         print(f"Layout-only done. Saved under {save_path}")
         return 0
 
+    connection_deadline = time.monotonic() + args.connect_timeout
     require_server(args.client_host, args.connect_timeout)
+    remaining = connection_deadline - time.monotonic()
+    if remaining <= 0:
+        raise PreviewError("Preview connection timeout expired before robot construction")
 
     cameras = resolve_camera_prims(template, args.cameras)
     if (args.headless or args.save_images) and not cameras:
@@ -774,7 +815,7 @@ def main() -> int:
         template,
         files,
         client_host=args.client_host,
-        connect_timeout=args.connect_timeout,
+        connect_timeout=remaining,
         gui=bool(args.gui and not args.headless),
         save_images=args.save_images or args.headless,
         cameras=cameras,

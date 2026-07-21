@@ -2,6 +2,8 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
+import math
+import numbers
 import os
 import sys
 
@@ -79,37 +81,52 @@ def find_urdf_in_robot_cfg(robot_urdf_name, project_root):
     )
 
 
+class RpcConnectionError(ConnectionError):
+    """A bounded RpcClient connection attempt could not reach the server."""
+
+
 # All rotation angles in the code are in degrees
 class RpcClient:
     def __init__(self, client_host, robot_urdf="", connect_timeout=None):
+        if connect_timeout is not None and (
+            isinstance(connect_timeout, bool)
+            or not isinstance(connect_timeout, numbers.Real)
+            or not math.isfinite(connect_timeout)
+            or connect_timeout <= 0
+        ):
+            raise ValueError("connect_timeout must be a finite positive real number")
+
         attempt_count = 600 if connect_timeout is None else 1
         readiness_timeout = 5 if connect_timeout is None else connect_timeout
         for i in range(attempt_count):
+            channel = None
             try:
-                self.channel = grpc.insecure_channel(
+                channel = grpc.insecure_channel(
                     client_host, options=[("grpc.max_receive_message_length", 16094304)]
                 )
-                grpc.channel_ready_future(self.channel).result(timeout=readiness_timeout)
-                self.robot_urdf = robot_urdf
-                # Find and store URDF path during initialization
-                self.urdf_path = find_urdf_in_robot_cfg(self.robot_urdf, project_root)
-                break
-            except grpc.FutureTimeoutError as e:
-                logger.error(f"Failed to connect to gRPC server[{i}]: {e}")
+                grpc.channel_ready_future(channel).result(timeout=readiness_timeout)
+                urdf_path = find_urdf_in_robot_cfg(robot_urdf, project_root)
+            except (grpc.FutureTimeoutError, grpc.RpcError) as exc:
+                if channel is not None:
+                    channel.close()
+                logger.error(f"Failed to connect to gRPC server[{i}]: {exc}")
                 if connect_timeout is not None:
-                    self.channel.close()
+                    raise RpcConnectionError(
+                        f"Failed to connect to gRPC server at {client_host}"
+                    ) from exc
+                if i == attempt_count - 1:
                     raise
                 time.sleep(3)
-                if i >= 599:
-                    raise e
-            except grpc.RpcError as e:
-                logger.error(f"Failed to connect to gRPC server[{i}]: {e}")
-                if connect_timeout is not None:
-                    self.channel.close()
-                    raise
-                time.sleep(3)
-                if i >= 599:
-                    raise e
+                continue
+            except BaseException:
+                if channel is not None:
+                    channel.close()
+                raise
+
+            self.channel = channel
+            self.robot_urdf = robot_urdf
+            self.urdf_path = urdf_path
+            break
 
     def set_task_task_basic_info(self, task_description):
         stub = sim_observation_service_pb2_grpc.SimObservationServiceStub(self.channel)

@@ -1120,20 +1120,26 @@ def test_build_robot_passes_connect_timeout_to_isaac_robot(
         def __init__(self, **kwargs):
             constructed.append(kwargs)
 
+    class FakeRpcConnectionError(Exception):
+        pass
+
     preview_layout.TaskGenerator = FakeTaskGenerator
     monkeypatch.setattr(
         preview_layout,
         "_import_isaac_client",
-        lambda: (None, FakeRobot, None, None),
+        lambda: (None, FakeRobot, None, None, FakeRpcConnectionError),
     )
     template = {
         "robot": {"robot_cfg": "robot.json"},
         "scene": {"scene_usd": "scene.usd"},
     }
 
+    monotonic_values = iter([30.0, 30.25])
+    monkeypatch.setattr(preview_layout.time, "monotonic", lambda: next(monotonic_values))
+
     preview_layout.build_robot(template, "localhost:50051", 0.75)
 
-    assert constructed[0]["connect_timeout"] == 0.75
+    assert constructed[0]["connect_timeout"] == 0.5
 
 
 def install_preview_fakes(
@@ -1189,6 +1195,9 @@ def install_preview_fakes(
                 raise AssertionError("preview must not access open_gripper")
             raise AttributeError(name)
 
+    class FakeRpcConnectionError(ConnectionError):
+        pass
+
     class FakeAgent:
         instances = []
 
@@ -1230,7 +1239,7 @@ def install_preview_fakes(
     monkeypatch.setattr(
         preview_layout,
         "_import_isaac_client",
-        lambda: (FakeAgent, None, None, None),
+        lambda: (FakeAgent, None, None, None, FakeRpcConnectionError),
     )
 
     def fake_build_robot(template, client_host, connect_timeout):
@@ -1252,6 +1261,7 @@ def install_preview_fakes(
         preview_layout, "prepare_instance_file", fake_prepare_instance_file
     )
     monkeypatch.setattr(preview_layout.time, "sleep", sleep_calls.append)
+    monkeypatch.setattr(preview_layout.time, "monotonic", lambda: 100.0)
 
     return types.SimpleNamespace(
         files=files,
@@ -1263,6 +1273,7 @@ def install_preview_fakes(
         prepare_calls=prepare_calls,
         temporary_dirs=temporary_dirs,
         sleep_calls=sleep_calls,
+        RpcConnectionError=FakeRpcConnectionError,
     )
 
 
@@ -1430,15 +1441,7 @@ def test_preview_instances_converts_grpc_robot_connection_error(
 ):
     fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
 
-    class RpcError(Exception):
-        pass
-
-    fake_grpc = types.SimpleNamespace(
-        FutureTimeoutError=type("FutureTimeoutError", (Exception,), {}),
-        RpcError=RpcError,
-    )
-    monkeypatch.setitem(sys.modules, "grpc", fake_grpc)
-    connection_error = RpcError("server raced away")
+    connection_error = fakes.RpcConnectionError("server raced away")
     monkeypatch.setattr(
         preview_layout,
         "build_robot",
@@ -1455,6 +1458,44 @@ def test_preview_instances_converts_grpc_robot_connection_error(
         exc_info.value
     )
     assert exc_info.value.__cause__ is connection_error
+
+
+def test_preview_instances_preserves_ordinary_grpc_robot_error(
+    preview_layout, monkeypatch, tmp_path
+):
+    fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
+
+    class RpcError(Exception):
+        pass
+
+    rpc_error = RpcError("INVALID_ARGUMENT")
+    monkeypatch.setattr(
+        preview_layout,
+        "build_robot",
+        lambda *args, **kwargs: (_ for _ in ()).throw(rpc_error),
+    )
+
+    with pytest.raises(RpcError, match="INVALID_ARGUMENT") as exc_info:
+        preview_layout.preview_instances(
+            **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=False)
+        )
+
+    assert exc_info.value is rpc_error
+
+
+def test_preview_instances_deducts_lazy_import_time_from_connection_budget(
+    preview_layout, monkeypatch, tmp_path
+):
+    fakes = install_preview_fakes(preview_layout, monkeypatch, tmp_path)
+    monotonic_values = iter([20.0, 20.4])
+    monkeypatch.setattr(preview_layout.time, "monotonic", lambda: next(monotonic_values))
+
+    preview_layout.preview_instances(
+        **preview_kwargs(tmp_path, [], gui=False, save_images=False)
+    )
+
+    assert fakes.build_calls[0][:2] == ({"task": "demo"}, "localhost:50051")
+    assert fakes.build_calls[0][2] == pytest.approx(1.1)
 
 
 def test_preview_instances_preserves_non_connection_robot_error(
@@ -1613,6 +1654,8 @@ def test_main_requires_server_before_importing_or_building_robot(
     args = make_main_args(tmp_path, layout_only=False)
     configure_main_dependencies(preview_layout, monkeypatch, tmp_path, args)
     calls = []
+    monotonic_values = iter([10.0, 10.4])
+    monkeypatch.setattr(preview_layout.time, "monotonic", lambda: next(monotonic_values))
 
     monkeypatch.setattr(
         preview_layout,
@@ -1647,11 +1690,31 @@ def test_main_requires_server_before_importing_or_building_robot(
     monkeypatch.setattr(preview_layout, "preview_instances", fake_preview_instances)
 
     assert preview_layout.main() == 0
-    assert calls == [
+    assert calls[:2] == [
         ("require", "localhost:50051", 1.5),
         ("import",),
-        ("build", "localhost:50051", 1.5),
     ]
+    assert calls[2][:2] == ("build", "localhost:50051")
+    assert calls[2][2] == pytest.approx(1.1)
+
+
+def test_main_does_not_construct_robot_when_preflight_uses_total_budget(
+    preview_layout, monkeypatch, tmp_path
+):
+    args = make_main_args(tmp_path, layout_only=False)
+    configure_main_dependencies(preview_layout, monkeypatch, tmp_path, args)
+    monotonic_values = iter([10.0, 11.5])
+    monkeypatch.setattr(preview_layout.time, "monotonic", lambda: next(monotonic_values))
+    monkeypatch.setattr(preview_layout, "require_server", lambda *args: None)
+    monkeypatch.setattr(preview_layout, "resolve_camera_prims", lambda *args: [])
+    monkeypatch.setattr(
+        preview_layout,
+        "preview_instances",
+        lambda *args, **kwargs: pytest.fail("expired budget must not build robot"),
+    )
+
+    with pytest.raises(preview_layout.PreviewError, match="connection timeout"):
+        preview_layout.main()
 
 
 def test_main_layout_only_does_not_require_server(
@@ -1710,22 +1773,107 @@ def test_save_preview_images_reports_missing_cv2_as_preview_error(
         preview_layout.save_preview_images(object(), [], tmp_path, "demo_0")
 
 
-def test_save_preview_images_rejects_failed_imwrite(
+def test_save_preview_images_second_failure_publishes_no_images(
     preview_layout, monkeypatch, tmp_path
 ):
-    image = object()
+    images = [object(), object()]
+    write_calls = []
+
+    def imwrite(path, image):
+        write_calls.append(path)
+        if len(write_calls) == 2:
+            return False
+        Path(path).write_bytes(b"temporary")
+        return True
+
     fake_cv2 = types.SimpleNamespace(
         COLOR_RGB2BGR=1,
         cvtColor=lambda actual, code: actual,
-        imwrite=lambda path, actual: False,
+        imwrite=imwrite,
     )
     monkeypatch.setitem(sys.modules, "cv2", fake_cv2)
-    monkeypatch.setattr(preview_layout, "capture_cameras", lambda robot, prims: [image])
+    monkeypatch.setattr(preview_layout, "capture_cameras", lambda robot, prims: images)
 
     with pytest.raises(preview_layout.PreviewError, match="Failed to write"):
         preview_layout.save_preview_images(
-            object(), [("head", "/World/head")], tmp_path, "demo_0"
+            object(),
+            [("head", "/World/head"), ("left", "/World/left")],
+            tmp_path,
+            "demo_0",
         )
+
+    assert not (tmp_path / "head.png").exists()
+    assert not (tmp_path / "left.png").exists()
+
+
+def test_save_preview_images_rejects_short_camera_response(
+    preview_layout, monkeypatch, tmp_path
+):
+    monkeypatch.setitem(sys.modules, "cv2", types.SimpleNamespace())
+    monkeypatch.setattr(
+        preview_layout, "capture_cameras", lambda robot, prims: [object()]
+    )
+
+    with pytest.raises(preview_layout.PreviewError, match="left"):
+        preview_layout.save_preview_images(
+            object(),
+            [("head", "/World/head"), ("left", "/World/left")],
+            tmp_path,
+            "demo_0",
+        )
+
+    assert list(tmp_path.glob("*.png")) == []
+
+
+def test_save_preview_images_rejects_none_camera_image(
+    preview_layout, monkeypatch, tmp_path
+):
+    monkeypatch.setitem(sys.modules, "cv2", types.SimpleNamespace())
+    monkeypatch.setattr(
+        preview_layout, "capture_cameras", lambda robot, prims: [object(), None]
+    )
+
+    with pytest.raises(preview_layout.PreviewError, match="left"):
+        preview_layout.save_preview_images(
+            object(),
+            [("head", "/World/head"), ("left", "/World/left")],
+            tmp_path,
+            "demo_0",
+        )
+
+    assert list(tmp_path.glob("*.png")) == []
+
+
+def test_save_preview_images_publishes_all_images_after_all_writes_succeed(
+    preview_layout, monkeypatch, tmp_path
+):
+    images = [object(), object()]
+
+    def imwrite(path, image):
+        Path(path).write_bytes(b"image")
+        return True
+
+    fake_cv2 = types.SimpleNamespace(
+        COLOR_RGB2BGR=1,
+        cvtColor=lambda actual, code: actual,
+        imwrite=imwrite,
+    )
+    monkeypatch.setitem(sys.modules, "cv2", fake_cv2)
+    monkeypatch.setattr(preview_layout, "capture_cameras", lambda robot, prims: images)
+
+    written = preview_layout.save_preview_images(
+        object(),
+        [("head", "/World/head"), ("left", "/World/left")],
+        tmp_path,
+        "demo_0",
+    )
+
+    assert written == {
+        "head": str(tmp_path / "head.png"),
+        "left": str(tmp_path / "left.png"),
+    }
+    assert (tmp_path / "head.png").read_bytes() == b"image"
+    assert (tmp_path / "left.png").read_bytes() == b"image"
 
 
 @pytest.mark.parametrize(("headless", "save_images"), [(True, False), (False, True)])

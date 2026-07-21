@@ -292,8 +292,11 @@ not execute trajectory planning.
 
 The default server endpoint is `localhost:50051`. If it is unavailable, the
 script fails fast after `--connect-timeout` (default: 5 seconds) and prints the
-server command above. The timeout covers both the gRPC readiness preflight and
-the actual `RpcClient` connection used to construct the robot. Useful variants:
+server command above. This is one shared total budget across the gRPC readiness
+preflight, lazy client imports, robot setup, and the actual `RpcClient`
+connection; each stage receives only the remaining time. Image capture is
+strict: every requested camera must return an image and every PNG must stage
+successfully before any image for that layout is published. Useful variants:
 
 - `--layout-only` generates layouts without connecting to Isaac Sim.
 - `--skip-generate` reuses layouts already under the task's output directory.
