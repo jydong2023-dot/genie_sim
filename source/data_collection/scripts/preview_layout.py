@@ -30,6 +30,9 @@ from __future__ import annotations
 
 import argparse
 import copy
+import ctypes
+import errno
+import fcntl
 import json
 import math
 import os
@@ -38,6 +41,7 @@ import socket
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -82,6 +86,18 @@ def positive_float(value: str) -> float:
         raise argparse.ArgumentTypeError(f"expected a positive number: {value}") from exc
     if not math.isfinite(parsed) or parsed <= 0:
         raise argparse.ArgumentTypeError(f"expected a positive number: {value}")
+    return parsed
+
+
+def positive_int(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            f"expected a positive integer: {value}"
+        ) from exc
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError(f"expected a positive integer: {value}")
     return parsed
 
 
@@ -141,14 +157,8 @@ def parse_args() -> argparse.Namespace:
         default=Path("/home/user/djy/genie_sim/output"),
         help="Where to write generated layout JSONs and preview images",
     )
-    p.add_argument("--num-episodes", type=int, default=None, help="Override template num_of_episode")
-    generation = p.add_mutually_exclusive_group()
-    generation.add_argument("--skip-generate", action="store_true", help="Reuse existing layouts under output-dir/<task>/")
-    generation.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Replace a non-empty output-dir/<task>/ when generating layouts",
-    )
+    p.add_argument("--num-episodes", type=positive_int, default=None, help="Override template num_of_episode")
+    p.add_argument("--skip-generate", action="store_true", help="Reuse existing layouts under output-dir/<task>/")
     p.add_argument("--layout-only", action="store_true", help="Only generate layouts; do not connect to Isaac")
     mode = p.add_mutually_exclusive_group()
     mode.add_argument("--gui", action="store_true", default=False, help="Interactive Isaac GUI preview (default if not --headless)")
@@ -266,35 +276,97 @@ def discover_layout_files(save_path: Path, task_name: str) -> list[Path]:
     return [path for _, _, path in sorted(matches)]
 
 
+@contextmanager
+def layout_lock(output_root: Path, task_name: str, *, shared: bool):
+    lock_path = output_root / f".{task_name}.preview.lock"
+    flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(lock_path, flags, 0o600)
+    except OSError as exc:
+        raise PreviewError(f"Cannot open preview generation lock: {lock_path}") from exc
+
+    operation = fcntl.LOCK_SH if shared else fcntl.LOCK_EX
+    try:
+        try:
+            fcntl.flock(fd, operation | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise PreviewError(
+                f"Layout generation already in progress for task {task_name!r}"
+            ) from exc
+        yield
+    finally:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        except OSError:
+            pass
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+
+
+def _rename_noreplace(src: Path, dst: Path) -> None:
+    try:
+        renameat2 = ctypes.CDLL(None, use_errno=True).renameat2
+    except AttributeError as exc:
+        raise PreviewError(
+            "Atomic no-replace layout publishing is unavailable on this platform"
+        ) from exc
+
+    renameat2.argtypes = (
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+    )
+    renameat2.restype = ctypes.c_int
+    at_fdcwd = -100
+    rename_noreplace = 1
+    if renameat2(
+        at_fdcwd,
+        os.fsencode(src),
+        at_fdcwd,
+        os.fsencode(dst),
+        rename_noreplace,
+    ) == 0:
+        return
+
+    error_number = ctypes.get_errno()
+    if error_number == errno.EEXIST:
+        raise PreviewError(f"Layout destination already exists: {dst}")
+    if error_number == errno.ENOSYS:
+        raise PreviewError(
+            "Atomic no-replace layout publishing is unavailable on this platform"
+        )
+    raise OSError(error_number, os.strerror(error_number), str(dst))
+
+
+def require_positive_episode_count(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise PreviewError(f"Episode count must be a positive integer: {value!r}")
+    return value
+
+
 def generate_layouts(
     template_path: Path,
     output_dir: Path,
     num_episodes: int | None,
-    overwrite: bool = False,
 ) -> tuple[dict, Path, list[Path]]:
     with open(template_path, "r", encoding="utf-8") as f:
         task_info = json.load(f)
     task_name = task_info["task"]
+    if num_episodes is None:
+        num_episodes = task_info.get("recording_setting", {}).get("num_of_episode", 1)
+    num_episodes = require_positive_episode_count(num_episodes)
     output_root = resolve_output_root(output_dir, create=True)
     save_path = resolve_save_path(output_dir, task_name)
-    if num_episodes is None:
-        num_episodes = int(task_info.get("recording_setting", {}).get("num_of_episode", 1))
-    lock_path = output_root / f".{task_name}.preview.lock"
-    try:
-        lock_path.mkdir()
-    except FileExistsError as exc:
-        raise PreviewError(
-            f"Layout generation already in progress for task {task_name!r}"
-        ) from exc
-
-    try:
+    with layout_lock(output_root, task_name, shared=False):
         save_path = resolve_save_path(output_dir, task_name)
-        if save_path.exists() and (
-            not save_path.is_dir() or any(save_path.iterdir())
-        ) and not overwrite:
+        if save_path.exists():
             raise PreviewError(
-                f"Layout destination is not empty: {save_path}. "
-                "Use --skip-generate to reuse it or --overwrite to replace it."
+                f"Layout destination already exists: {save_path}. "
+                "Use --skip-generate to reuse it or choose a new --output-dir."
             )
 
         logger.info(f"Generating {num_episodes} layouts -> {save_path}")
@@ -303,12 +375,12 @@ def generate_layouts(
             prefix=f".{task_name}.preview-", dir=output_root
         ) as temp_dir:
             temporary_dir = Path(temp_dir)
-            generated_files = []
+            staging_task_dir = temporary_dir / task_name
+            staging_task_dir.mkdir()
             for episode_id in range(num_episodes):
-                output_file = temporary_dir / f"{task_name}_{episode_id}.json"
+                output_file = staging_task_dir / f"{task_name}_{episode_id}.json"
                 for _ in range(5):
                     if tg.generate(str(output_file)):
-                        generated_files.append(output_file)
                         break
                 else:
                     raise PreviewError(
@@ -319,67 +391,24 @@ def generate_layouts(
             current_save_path = resolve_save_path(output_dir, task_name)
             if current_output_root != output_root or current_save_path != save_path:
                 raise PreviewError("Preview output containment changed during generation")
-            if save_path.exists() and not save_path.is_dir():
-                raise PreviewError(f"Layout destination is not a directory: {save_path}")
-            if save_path.exists() and any(save_path.iterdir()) and not overwrite:
-                raise PreviewError(
-                    f"Layout destination is not empty: {save_path}. "
-                    "Use --skip-generate to reuse it or --overwrite to replace it."
-                )
-
-            destination_existed = save_path.exists()
-            save_path.mkdir(exist_ok=True)
-            if save_path.is_symlink() or save_path.resolve().parent != output_root:
-                raise PreviewError(f"Unsafe task output before commit: {save_path}")
-            backup_dir = temporary_dir / "previous"
-            backups = []
-            installed = []
-            try:
-                if overwrite:
-                    backup_dir.mkdir()
-                    for old_layout in discover_layout_files(save_path, task_name):
-                        backup = backup_dir / old_layout.name
-                        os.replace(old_layout, backup)
-                        backups.append((backup, old_layout))
-                for generated_file in generated_files:
-                    destination = save_path / generated_file.name
-                    os.replace(generated_file, destination)
-                    installed.append(destination)
-            except BaseException as commit_error:
-                rollback_errors = []
-                for destination in installed:
-                    try:
-                        destination.unlink(missing_ok=True)
-                    except OSError as exc:
-                        rollback_errors.append(exc)
-                for backup, destination in backups:
-                    try:
-                        os.replace(backup, destination)
-                    except OSError as exc:
-                        rollback_errors.append(exc)
-                if not destination_existed:
-                    try:
-                        save_path.rmdir()
-                    except OSError:
-                        pass
-                if rollback_errors:
-                    raise PreviewError(
-                        f"Failed to roll back layout commit for {task_name!r}"
-                    ) from commit_error
-                raise
+            if save_path.exists() or save_path.is_symlink():
+                raise PreviewError(f"Layout destination already exists: {save_path}")
+            _rename_noreplace(staging_task_dir, save_path)
 
         files = discover_layout_files(save_path, task_name)
         return task_info, save_path, files
-    finally:
-        lock_path.rmdir()
 
 
 def discover_layouts(template_path: Path, output_dir: Path) -> tuple[dict, Path, list[Path]]:
     with open(template_path, "r", encoding="utf-8") as f:
         task_info = json.load(f)
     task_name = task_info["task"]
-    save_path = resolve_save_path(output_dir, task_name)
-    files = discover_layout_files(save_path, task_name)
+    output_root = resolve_output_root(output_dir)
+    if not output_root.is_dir():
+        raise FileNotFoundError(f"No layouts under missing output directory: {output_root}")
+    with layout_lock(output_root, task_name, shared=True):
+        save_path = resolve_save_path(output_dir, task_name)
+        files = discover_layout_files(save_path, task_name)
     if not files:
         raise FileNotFoundError(f"No layouts in {save_path}; omit --skip-generate first")
     return task_info, save_path, files
@@ -603,10 +632,7 @@ def main() -> int:
         template, save_path, files = discover_layouts(template_path, output_dir)
     else:
         template, save_path, files = generate_layouts(
-            template_path,
-            output_dir,
-            args.num_episodes,
-            overwrite=args.overwrite,
+            template_path, output_dir, args.num_episodes
         )
 
     try:

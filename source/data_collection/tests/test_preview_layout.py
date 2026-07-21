@@ -1,5 +1,6 @@
 import ast
 import argparse
+import fcntl
 import importlib.util
 import json
 import sys
@@ -203,43 +204,18 @@ def test_generate_layouts_rejects_symlink_output_root_before_constructing_genera
     assert list(real_output.iterdir()) == []
 
 
-def test_generate_layouts_rechecks_target_containment_before_commit(
-    preview_layout, tmp_path
-):
-    template_path = tmp_path / "template.json"
-    write_template(template_path, episodes=1)
-    output_dir = tmp_path / "output"
-    outside = tmp_path / "outside"
-    outside.mkdir()
-
-    class FakeTaskGenerator:
-        def __init__(self, task_info):
-            pass
-
-        def generate(self, output_file):
-            Path(output_file).write_text("generated", encoding="utf-8")
-            (output_dir / "demo").symlink_to(outside, target_is_directory=True)
-            return True
-
-    preview_layout.TaskGenerator = FakeTaskGenerator
-
-    with pytest.raises(preview_layout.PreviewError, match="output"):
-        preview_layout.generate_layouts(template_path, output_dir, None)
-
-    assert list(outside.iterdir()) == []
-    assert not (output_dir / ".demo.preview.lock").exists()
-    assert sorted(path.name for path in output_dir.iterdir()) == ["demo"]
-
-
-def test_generate_layouts_refuses_nonempty_destination_without_overwrite(
-    preview_layout, tmp_path
+@pytest.mark.parametrize("existing_content", [None, "keep"])
+def test_generate_layouts_refuses_any_existing_destination_without_constructing_generator(
+    preview_layout, tmp_path, existing_content
 ):
     template_path = tmp_path / "template.json"
     write_template(template_path)
     save_path = tmp_path / "output" / "demo"
     save_path.mkdir(parents=True)
-    marker = save_path / "keep.txt"
-    marker.write_text("keep", encoding="utf-8")
+    marker = None
+    if existing_content is not None:
+        marker = save_path / "keep.txt"
+        marker.write_text(existing_content, encoding="utf-8")
     constructed = []
 
     class FakeTaskGenerator:
@@ -252,85 +228,11 @@ def test_generate_layouts_refuses_nonempty_destination_without_overwrite(
         preview_layout.generate_layouts(template_path, tmp_path / "output", None)
 
     assert "--skip-generate" in str(exc_info.value)
-    assert "--overwrite" in str(exc_info.value)
-    assert marker.read_text(encoding="utf-8") == "keep"
+    assert "--output-dir" in str(exc_info.value)
+    if marker is not None:
+        assert marker.read_text(encoding="utf-8") == existing_content
+    assert save_path.is_dir()
     assert constructed == []
-
-
-def test_generate_layouts_allows_empty_destination_without_overwrite(
-    preview_layout, tmp_path
-):
-    template_path = tmp_path / "template.json"
-    write_template(template_path)
-    save_path = tmp_path / "output" / "demo"
-    save_path.mkdir(parents=True)
-    constructed = []
-
-    class FakeTaskGenerator:
-        def __init__(self, task_info):
-            constructed.append(task_info)
-
-        def generate(self, output_file):
-            Path(output_file).write_text("{}", encoding="utf-8")
-            return True
-
-    preview_layout.TaskGenerator = FakeTaskGenerator
-
-    _, _, files = preview_layout.generate_layouts(
-        template_path, tmp_path / "output", None
-    )
-
-    assert len(constructed) == 1
-    assert files == [
-        save_path / "demo_0.json",
-        save_path / "demo_1.json",
-        save_path / "demo_2.json",
-    ]
-
-
-def test_generate_layouts_overwrite_allows_generator_to_replace_nonempty_destination(
-    preview_layout, tmp_path
-):
-    template_path = tmp_path / "template.json"
-    write_template(template_path)
-    save_path = tmp_path / "output" / "demo"
-    save_path.mkdir(parents=True)
-    old_layouts = [save_path / "demo_0.json", save_path / "demo_9.json"]
-    for path in old_layouts:
-        path.write_text("old", encoding="utf-8")
-    marker = save_path / "keep.txt"
-    marker.write_text("keep", encoding="utf-8")
-    nonmatching = save_path / "demo_server.json"
-    nonmatching.write_text("server", encoding="utf-8")
-    preview_dir = save_path / "preview"
-    preview_dir.mkdir()
-    preview_marker = preview_dir / "image.png"
-    preview_marker.write_text("image", encoding="utf-8")
-
-    class FakeTaskGenerator:
-        def __init__(self, task_info):
-            pass
-
-        def generate(self, output_file):
-            Path(output_file).write_text("new", encoding="utf-8")
-            return True
-
-    preview_layout.TaskGenerator = FakeTaskGenerator
-
-    _, _, files = preview_layout.generate_layouts(
-        template_path, tmp_path / "output", None, overwrite=True
-    )
-
-    assert files == [
-        save_path / "demo_0.json",
-        save_path / "demo_1.json",
-        save_path / "demo_2.json",
-    ]
-    assert all(path.read_text(encoding="utf-8") == "new" for path in files)
-    assert not old_layouts[1].exists()
-    assert marker.read_text(encoding="utf-8") == "keep"
-    assert nonmatching.read_text(encoding="utf-8") == "server"
-    assert preview_marker.read_text(encoding="utf-8") == "image"
 
 
 def test_generate_layouts_passes_deep_copy_to_mutating_generator(
@@ -388,18 +290,12 @@ def test_generate_layouts_explicit_episode_count_overrides_template(
     assert generated_counts == ["demo_0.json", "demo_1.json"]
 
 
-@pytest.mark.parametrize("overwrite", [False, True])
-def test_generate_layouts_existing_lock_fails_before_constructing_generator(
-    preview_layout, tmp_path, overwrite
+@pytest.mark.parametrize("episodes", [0, -1, 1.5, True, "2", float("nan")])
+def test_generate_layouts_rejects_invalid_template_episode_count_before_generator(
+    preview_layout, tmp_path, episodes
 ):
     template_path = tmp_path / "template.json"
-    write_template(template_path)
-    output_dir = tmp_path / "output"
-    output_dir.mkdir()
-    lock_path = output_dir / ".demo.preview.lock"
-    lock_path.mkdir()
-    marker = output_dir / "marker.txt"
-    marker.write_text("keep", encoding="utf-8")
+    write_template(template_path, episodes=episodes)
     constructed = []
 
     class FakeTaskGenerator:
@@ -408,21 +304,90 @@ def test_generate_layouts_existing_lock_fails_before_constructing_generator(
 
     preview_layout.TaskGenerator = FakeTaskGenerator
 
-    with pytest.raises(
-        preview_layout.PreviewError, match="generation already in progress"
-    ):
+    with pytest.raises(preview_layout.PreviewError, match="positive integer"):
+        preview_layout.generate_layouts(template_path, tmp_path / "output", None)
+
+    assert constructed == []
+    assert not (tmp_path / "output" / "demo").exists()
+
+
+@pytest.mark.parametrize("episodes", [0, -1, 1.5, True, float("inf")])
+def test_generate_layouts_rejects_invalid_explicit_episode_count_before_generator(
+    preview_layout, tmp_path, episodes
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path)
+    constructed = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            constructed.append(task_info)
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    with pytest.raises(preview_layout.PreviewError, match="positive integer"):
         preview_layout.generate_layouts(
-            template_path, output_dir, 1, overwrite=overwrite
+            template_path, tmp_path / "output", episodes
         )
 
     assert constructed == []
-    assert marker.read_text(encoding="utf-8") == "keep"
-    assert lock_path.is_dir()
+    assert not (tmp_path / "output" / "demo").exists()
 
 
-@pytest.mark.parametrize("second_overwrite", [False, True])
+def test_generate_layouts_held_lock_fails_before_constructing_generator(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path)
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    lock_path = output_dir / ".demo.preview.lock"
+    constructed = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            constructed.append(task_info)
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    with lock_path.open("a+") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        with pytest.raises(
+            preview_layout.PreviewError, match="generation already in progress"
+        ):
+            preview_layout.generate_layouts(template_path, output_dir, 1)
+
+    assert constructed == []
+    assert lock_path.is_file()
+
+
+def test_generate_layouts_rejects_symlink_lock_file_before_generator(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path)
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    outside = tmp_path / "outside.lock"
+    outside.write_text("outside", encoding="utf-8")
+    (output_dir / ".demo.preview.lock").symlink_to(outside)
+    constructed = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            constructed.append(task_info)
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    with pytest.raises(preview_layout.PreviewError, match="lock"):
+        preview_layout.generate_layouts(template_path, output_dir, 1)
+
+    assert constructed == []
+    assert outside.read_text(encoding="utf-8") == "outside"
+
+
 def test_generate_layouts_lock_allows_only_one_concurrent_generator(
-    preview_layout, tmp_path, second_overwrite
+    preview_layout, tmp_path
 ):
     template_path = tmp_path / "template.json"
     write_template(template_path, episodes=1)
@@ -459,9 +424,7 @@ def test_generate_layouts_lock_allows_only_one_concurrent_generator(
     with pytest.raises(
         preview_layout.PreviewError, match="generation already in progress"
     ):
-        preview_layout.generate_layouts(
-            template_path, output_dir, None, overwrite=second_overwrite
-        )
+        preview_layout.generate_layouts(template_path, output_dir, None)
 
     assert len(constructed) == 1
     assert generated == ["demo_0.json"]
@@ -472,6 +435,81 @@ def test_generate_layouts_lock_allows_only_one_concurrent_generator(
     assert (output_dir / "demo" / "demo_0.json").read_text(
         encoding="utf-8"
     ) == "owner"
+
+
+def test_layout_lock_is_released_when_owning_file_descriptor_closes(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path, episodes=1)
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    lock_path = output_dir / ".demo.preview.lock"
+    lock_file = lock_path.open("a+")
+    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    lock_file.close()
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            pass
+
+        def generate(self, output_file):
+            Path(output_file).write_text("{}", encoding="utf-8")
+            return True
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    _, save_path, files = preview_layout.generate_layouts(
+        template_path, output_dir, None
+    )
+
+    assert files == [save_path / "demo_0.json"]
+    assert lock_path.is_file()
+
+
+def test_discover_layouts_fails_fast_while_generation_holds_exclusive_lock(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path, episodes=1)
+    output_dir = tmp_path / "output"
+    generate_started = threading.Event()
+    allow_generate = threading.Event()
+    errors = []
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            pass
+
+        def generate(self, output_file):
+            generate_started.set()
+            assert allow_generate.wait(timeout=2)
+            Path(output_file).write_text("{}", encoding="utf-8")
+            return True
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    def run_generate():
+        try:
+            preview_layout.generate_layouts(template_path, output_dir, None)
+        except Exception as exc:  # pragma: no cover - asserted below
+            errors.append(exc)
+
+    owner = threading.Thread(target=run_generate)
+    owner.start()
+    assert generate_started.wait(timeout=2)
+
+    with pytest.raises(
+        preview_layout.PreviewError, match="generation already in progress"
+    ):
+        preview_layout.discover_layouts(template_path, output_dir)
+
+    allow_generate.set()
+    owner.join(timeout=2)
+    assert not owner.is_alive()
+    assert errors == []
+    _, _, files = preview_layout.discover_layouts(template_path, output_dir)
+    assert [path.name for path in files] == ["demo_0.json"]
 
 
 def test_generate_layouts_retries_each_episode_until_success(
@@ -502,19 +540,12 @@ def test_generate_layouts_retries_each_episode_until_success(
     assert [path.name for path in files] == ["demo_0.json"]
 
 
-def test_generate_layouts_failed_episode_preserves_existing_layouts_and_cleans_up(
+def test_generate_layouts_failed_episode_publishes_nothing_and_cleans_staging(
     preview_layout, tmp_path
 ):
     template_path = tmp_path / "template.json"
     write_template(template_path, episodes=2)
     output_dir = tmp_path / "output"
-    save_path = output_dir / "demo"
-    save_path.mkdir(parents=True)
-    old_layouts = [save_path / "demo_0.json", save_path / "demo_1.json"]
-    for path in old_layouts:
-        path.write_text(f"old-{path.stem}", encoding="utf-8")
-    marker = save_path / "keep.txt"
-    marker.write_text("keep", encoding="utf-8")
     attempts = []
 
     class FakeTaskGenerator:
@@ -531,38 +562,21 @@ def test_generate_layouts_failed_episode_preserves_existing_layouts_and_cleans_u
     preview_layout.TaskGenerator = FakeTaskGenerator
 
     with pytest.raises(preview_layout.PreviewError, match="5 attempts"):
-        preview_layout.generate_layouts(
-            template_path, output_dir, None, overwrite=True
-        )
+        preview_layout.generate_layouts(template_path, output_dir, None)
 
     assert attempts == ["demo_0.json"] + ["demo_1.json"] * 5
-    assert [path.read_text(encoding="utf-8") for path in old_layouts] == [
-        "old-demo_0",
-        "old-demo_1",
+    assert not (output_dir / "demo").exists()
+    assert sorted(path.name for path in output_dir.iterdir()) == [
+        ".demo.preview.lock"
     ]
-    assert marker.read_text(encoding="utf-8") == "keep"
-    assert not (output_dir / ".demo.preview.lock").exists()
-    assert sorted(path.name for path in output_dir.iterdir()) == ["demo"]
 
 
-def test_generate_layouts_commit_failure_restores_all_previous_layouts(
+def test_generate_layouts_publish_failure_leaves_no_target_or_staging_directory(
     preview_layout, monkeypatch, tmp_path
 ):
     template_path = tmp_path / "template.json"
     write_template(template_path, episodes=2)
     output_dir = tmp_path / "output"
-    save_path = output_dir / "demo"
-    save_path.mkdir(parents=True)
-    old_contents = {
-        save_path / "demo_0.json": "old-zero",
-        save_path / "demo_1.json": "old-one",
-        save_path / "demo_9.json": "old-nine",
-    }
-    for path, content in old_contents.items():
-        path.write_text(content, encoding="utf-8")
-    marker = save_path / "keep.txt"
-    marker.write_text("keep", encoding="utf-8")
-
     class FakeTaskGenerator:
         def __init__(self, task_info):
             pass
@@ -572,37 +586,67 @@ def test_generate_layouts_commit_failure_restores_all_previous_layouts(
             return True
 
     preview_layout.TaskGenerator = FakeTaskGenerator
-    real_replace = preview_layout.os.replace
-    failed = False
+    def fail_publish(src, dst):
+        raise preview_layout.PreviewError("injected publish failure")
 
-    def fail_second_install(src, dst):
-        nonlocal failed
-        src_path = Path(src)
-        dst_path = Path(dst)
-        if (
-            not failed
-            and src_path.name == "demo_1.json"
-            and dst_path == save_path / "demo_1.json"
-            and ".demo.preview-" in src_path.parent.name
-        ):
-            failed = True
-            raise OSError("injected commit failure")
-        real_replace(src, dst)
+    monkeypatch.setattr(preview_layout, "_rename_noreplace", fail_publish)
 
-    monkeypatch.setattr(preview_layout.os, "replace", fail_second_install)
+    with pytest.raises(preview_layout.PreviewError, match="injected publish failure"):
+        preview_layout.generate_layouts(template_path, output_dir, None)
 
-    with pytest.raises(OSError, match="injected commit failure"):
-        preview_layout.generate_layouts(
-            template_path, output_dir, None, overwrite=True
-        )
+    assert not (output_dir / "demo").exists()
+    assert sorted(path.name for path in output_dir.iterdir()) == [
+        ".demo.preview.lock"
+    ]
 
-    assert failed is True
-    assert {
-        path: path.read_text(encoding="utf-8") for path in old_contents
-    } == old_contents
-    assert marker.read_text(encoding="utf-8") == "keep"
-    assert not (output_dir / ".demo.preview.lock").exists()
-    assert sorted(path.name for path in output_dir.iterdir()) == ["demo"]
+
+def test_generate_layouts_never_replaces_target_created_during_generation(
+    preview_layout, tmp_path
+):
+    template_path = tmp_path / "template.json"
+    write_template(template_path, episodes=1)
+    output_dir = tmp_path / "output"
+
+    class FakeTaskGenerator:
+        def __init__(self, task_info):
+            pass
+
+        def generate(self, output_file):
+            Path(output_file).write_text("generated", encoding="utf-8")
+            target = output_dir / "demo"
+            target.mkdir()
+            (target / "external.txt").write_text("external", encoding="utf-8")
+            return True
+
+    preview_layout.TaskGenerator = FakeTaskGenerator
+
+    with pytest.raises(preview_layout.PreviewError, match="already exists"):
+        preview_layout.generate_layouts(template_path, output_dir, None)
+
+    assert (output_dir / "demo" / "external.txt").read_text(
+        encoding="utf-8"
+    ) == "external"
+    assert sorted(path.name for path in output_dir.iterdir()) == [
+        ".demo.preview.lock",
+        "demo",
+    ]
+
+
+def test_rename_noreplace_preserves_source_and_existing_target(
+    preview_layout, tmp_path
+):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "new.json").write_text("new", encoding="utf-8")
+    target = tmp_path / "target"
+    target.mkdir()
+    (target / "keep.txt").write_text("keep", encoding="utf-8")
+
+    with pytest.raises(preview_layout.PreviewError, match="already exists"):
+        preview_layout._rename_noreplace(source, target)
+
+    assert (source / "new.json").read_text(encoding="utf-8") == "new"
+    assert (target / "keep.txt").read_text(encoding="utf-8") == "keep"
 
 
 def test_discover_layouts_raises_when_no_layouts_exist(preview_layout, tmp_path):
@@ -798,6 +842,18 @@ def test_positive_float_rejects_non_positive_values(preview_layout, value):
         preview_layout.positive_float(value)
 
 
+def test_positive_int_accepts_positive_integer(preview_layout):
+    assert preview_layout.positive_int("3") == 3
+
+
+@pytest.mark.parametrize("value", ["0", "-1", "1.5", "nan", "inf"])
+def test_positive_int_rejects_non_positive_or_non_integer_values(
+    preview_layout, value
+):
+    with pytest.raises(argparse.ArgumentTypeError):
+        preview_layout.positive_int(value)
+
+
 def test_parse_args_defaults_connect_timeout_to_five_seconds(
     preview_layout, monkeypatch
 ):
@@ -823,21 +879,8 @@ def test_parse_args_uses_positive_float_for_connect_timeout(
         preview_layout.parse_args()
 
 
-def test_parse_args_supports_overwrite(preview_layout, monkeypatch):
-    monkeypatch.setattr(sys, "argv", [str(SCRIPT_PATH), "--overwrite"])
-
-    args = preview_layout.parse_args()
-
-    assert args.overwrite is True
-
-
-def test_parse_args_rejects_overwrite_with_skip_generate(preview_layout, monkeypatch):
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [str(SCRIPT_PATH), "--overwrite", "--skip-generate"],
-    )
-
+def test_parse_args_rejects_non_positive_num_episodes(preview_layout, monkeypatch):
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT_PATH), "--num-episodes", "0"])
     with pytest.raises(SystemExit):
         preview_layout.parse_args()
 
@@ -1240,7 +1283,6 @@ def make_main_args(tmp_path, *, layout_only):
         output_dir=tmp_path / "output",
         num_episodes=None,
         skip_generate=True,
-        overwrite=False,
         layout_only=layout_only,
         gui=False,
         headless=False,
