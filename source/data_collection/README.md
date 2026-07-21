@@ -256,32 +256,69 @@ python scripts/run_data_collection.py --task_template tasks/geniesim_2025/sort_f
 
 This workflow generates task layouts and loads them into an already-running
 Isaac Sim window for inspection. Start the server yourself first: the preview
-script does not start or stop Isaac Sim, Docker, or the server process. Use two
-terminals in `source/data_collection`, with `SIM_ASSETS` set to the correct
-asset root in both terminals. The standalone server reads this environment
-variable directly, so an editable `geniesim_assets` install is not a substitute.
+script does not start or stop Isaac Sim, Docker, or the server process.
 
-**Terminal 1 - start the GUI server:**
+Run both commands in the same data-collection Docker container, using Isaac
+Sim's Python interpreter at `/isaac-sim/python.sh`. Do not activate the host
+`base`, `geniesim`, or `data_collect` conda environment for these commands.
+The server imports `isaacsim`, so an ordinary host Python interpreter cannot
+replace Isaac Sim Python.
+
+The commands below use the paths and container name for this checkout:
+
+- repository: `/home/user/djy/genie_sim`
+- assets: `/home/user/djy/geniesim_assets`
+- container: `data_collection_open_source`
+
+The Docker image
+`registry.agibot.com/genie-sim/geniesim3-data-collection:latest` must already
+exist. Build it first with `geniesim autocollect build` if needed.
+
+**Terminal 1 - create the GUI container:**
+
+Run this part on the host. `start_gui.sh` enters a shell inside the new
+container; keep this terminal open.
 
 ```bash
-cd /path/to/genie_sim/source/data_collection
-export SIM_ASSETS=/path/to/geniesim_assets
-python scripts/data_collector_server.py --enable_physics
+export GENIE_SIM_ROOT=/home/user/djy/genie_sim
+export GENIESIM_ASSETS_SRC=/home/user/djy/geniesim_assets
+cd "$GENIE_SIM_ROOT/source/data_collection"
+./scripts/start_gui.sh run data_collection_open_source
+```
+
+After the prompt changes to the container shell, start the Isaac Sim gRPC
+server in the same terminal:
+
+```bash
+export SIM_ASSETS=/geniesim_assets
+cd /geniesim/main/data_collection
+/isaac-sim/python.sh scripts/data_collector_server.py --enable_physics
 ```
 
 Layout preview only needs physics. Do not add `--enable_curobo` or
 `--publish_ros`: the workflow performs neither motion planning nor recording.
+Wait until the server has finished starting before running Terminal 2.
 
 **Terminal 2 - generate and preview two layouts:**
 
+Open another host terminal. This command enters the already-running container
+and executes the preview with the same Isaac Sim Python environment:
+
 ```bash
-cd /path/to/genie_sim/source/data_collection
-export SIM_ASSETS=/path/to/geniesim_assets
-python scripts/preview_layout.py --gui \
-  --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
-  --output-dir /path/to/genie_sim/output \
-  --num-episodes 2
+docker exec -it data_collection_open_source bash -lc '
+  export SIM_ASSETS=/geniesim_assets
+  cd /geniesim/main/data_collection
+  /isaac-sim/python.sh scripts/preview_layout.py --gui \
+    --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
+    --output-dir /geniesim/main/data_collection/layout_preview_output_run1 \
+    --num-episodes 2
+'
 ```
+
+The generated JSON files are visible on the host under
+`/home/user/djy/genie_sim/source/data_collection/layout_preview_output_run1`.
+The output task directory is immutable: use `--skip-generate` to preview it
+again, or choose a new `--output-dir` for another randomized generation run.
 
 The script calls `TaskGenerator.generate()` once per episode, publishes the
 completed task directory atomically, then uses gRPC `reset()` and
