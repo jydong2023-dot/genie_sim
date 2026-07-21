@@ -385,9 +385,9 @@ def preview_instances(
     DataCollectionAgent, _, _, _ = _import_isaac_client()
     logger.info(f"Connecting to Isaac server at {client_host}")
     robot = build_robot(template, client_host)
-    agent = DataCollectionAgent(robot)
 
     try:
+        agent = DataCollectionAgent(robot)
         for i, path in enumerate(files):
             load_path = prepare_instance_file(path, assets_root, rewrite_assets)
             logger.info(f"[{i+1}/{len(files)}] Loading layout {path.name}")

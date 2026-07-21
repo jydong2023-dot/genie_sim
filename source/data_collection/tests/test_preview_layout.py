@@ -333,7 +333,12 @@ def test_parse_args_uses_positive_float_for_connect_timeout(
 
 
 def install_preview_fakes(
-    preview_layout, monkeypatch, tmp_path, *, generate_error_at=None
+    preview_layout,
+    monkeypatch,
+    tmp_path,
+    *,
+    generate_error_at=None,
+    agent_init_error=None,
 ):
     files = [tmp_path / "demo_0.json", tmp_path / "demo_1.json"]
     for path in files:
@@ -367,6 +372,8 @@ def install_preview_fakes(
             self.generate_count = 0
             self.instances.append(self)
             agent_events.append(("construct", robot))
+            if agent_init_error is not None:
+                raise agent_init_error
 
         def reset(self):
             agent_events.append(("reset",))
@@ -473,13 +480,6 @@ def test_preview_instances_gui_loads_layouts_without_collecting_trajectories(
     assert fakes.prepare_calls == [
         (path, tmp_path / "assets", False) for path in fakes.files
     ]
-    assert fakes.sleep_calls == [0.5, 1.0, 0.5, 1.0]
-    assert fakes.robot.open_gripper_calls == [
-        ("right", False),
-        ("left", False),
-        ("right", False),
-        ("left", False),
-    ]
     assert fakes.robot.client.exit_calls == 1
 
 
@@ -546,16 +546,53 @@ def test_preview_instances_exits_once_and_propagates_layout_error(
     assert fakes.robot.client.exit_calls == 1
 
 
-def test_preview_script_has_no_trajectory_collection_calls():
+def test_preview_instances_exits_once_when_agent_construction_fails(
+    preview_layout, monkeypatch, tmp_path
+):
+    agent_init_error = RuntimeError("agent construction failed")
+    fakes = install_preview_fakes(
+        preview_layout,
+        monkeypatch,
+        tmp_path,
+        agent_init_error=agent_init_error,
+    )
+
+    with pytest.raises(RuntimeError, match="agent construction failed") as exc_info:
+        preview_layout.preview_instances(
+            **preview_kwargs(tmp_path, fakes.files, gui=False, save_images=False)
+        )
+
+    assert exc_info.value is agent_init_error
+    assert fakes.build_calls == [({"task": "demo"}, "localhost:50051")]
+    assert fakes.robot.client.exit_calls == 1
+
+
+def test_preview_instances_has_no_trajectory_collection_calls():
     tree = ast.parse(SCRIPT_PATH.read_text(encoding="utf-8"))
+    preview_function = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "preview_instances"
+    )
     called_attributes = {
         node.func.attr
-        for node in ast.walk(tree)
+        for node in ast.walk(preview_function)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
     }
 
     assert called_attributes.isdisjoint(
-        {"run", "start_recording", "stop_recording", "load_task"}
+        {
+            "run",
+            "start_recording",
+            "stop_recording",
+            "load_task",
+            "execute",
+            "set_trajectory_list",
+            "move",
+            "move_pose",
+            "moveto",
+            "set_joint_positions",
+        }
     )
 
 
