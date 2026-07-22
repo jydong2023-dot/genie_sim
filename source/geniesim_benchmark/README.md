@@ -60,11 +60,16 @@ lighting, table height, and table color/texture changes while preserving the
 source task's instructions and scoring rules:
 
 ```bash
-python scripts/generate_stack_red_black_scenarios.py \
+python scripts/generate_task_scenarios.py \
   --task stack_red_block_on_black_block \
   --source-instance 0 \
   --count 40
 ```
+
+The command appends after the task's highest numeric instance, previews exactly
+the new instances, and writes per-camera images plus a contact sheet. Pass
+`--replace-generated` to replace numeric instances from zero, or
+`--skip-preview` when Isaac Sim preview is not needed.
 
 Use `--list-objects` before writing a profile for a complex scene. See the
 [scenario augmentation guide](scripts/README_SCENARIO_AUGMENTATION.md) and

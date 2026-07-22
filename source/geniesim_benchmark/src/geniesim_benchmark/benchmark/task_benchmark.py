@@ -30,6 +30,7 @@ from geniesim_benchmark.utils.name_utils import robot_type_mapping
 from geniesim_benchmark.benchmark.policy.demopolicy import DemoPolicy
 from geniesim_benchmark.benchmark.hooks.task import TaskHook
 from geniesim_benchmark.benchmark.subscene_override import resolve_sub_usd_path
+from geniesim_benchmark.benchmark.instance_selection import select_scene_instance_ids
 from geniesim_benchmark.benchmark.scenario_config import (
     apply_scenario_to_env,
     apply_scenario_to_task_config,
@@ -199,8 +200,14 @@ class TaskBenchmark(object):
                 sub_task_path = os.path.join(system_utils.benchmark_conf_path(), "llm_task", sub_task_name)
                 scene_instance_ids = sorted([int(name) for name in os.listdir(sub_task_path) if name.isdigit()])
 
+            requested_instance_ids = getattr(self.args, "instance_ids", "") or ""
+            scene_instance_ids = select_scene_instance_ids(
+                scene_instance_ids, requested_instance_ids
+            )
             num_instances = getattr(self.args, "num_instances", 0) or 0
-            if num_instances > 0 and num_instances < len(scene_instance_ids):
+            if requested_instance_ids:
+                logger.info(f"Selected exact scene instances: {scene_instance_ids}")
+            elif num_instances > 0 and num_instances < len(scene_instance_ids):
                 # Deterministic sub-sample based on the run's seed so the same
                 # config picks the same instances across machines / re-runs.
                 total = len(scene_instance_ids)

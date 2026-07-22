@@ -134,6 +134,9 @@ class BenchmarkConfig:
     # Number of scene instances to sample (deterministically by `seed`).
     # 0 (default) means "use all instances under llm_task/<sub_task>/".
     num_instances: int = 0
+    # Optional comma-separated exact scene IDs. Used by augmentation preview
+    # so only the scenes created by the current run are loaded.
+    instance_ids: str = ""
     # Overlay semantically-aligned paraphrased instructions from a sidecar
     # config (keyed by sub_task_name + instance_id). Off by default.
     language_perturbation: bool = False

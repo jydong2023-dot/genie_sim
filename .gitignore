@@ -62,3 +62,6 @@ MUJOCO_LOG.TXT
 .worktrees/
 *.png
 **/*.png
+source/geniesim_generator/openai_key.yaml
+.kit/
+task_previews/
