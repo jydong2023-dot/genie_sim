@@ -40,7 +40,7 @@ import re
 import sys
 
 SKIP_PREFIXES = ("geniesim",)
-SKIP_EXACT = {"isaacsim", "cv_bridge", "numpy", "scipy"}
+SKIP_EXACT = {"isaacsim", "cv_bridge", "numpy", "scipy", "scene_augmentation"}
 
 SOURCE_DIR = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path(__file__).resolve().parent.parent / "source"
 
@@ -90,7 +90,13 @@ def discover_tier1_packages() -> list[str]:
         # as of the tier model's introduction. Update if the umbrella
         # adds a new tier-1 peer AND the source-tree path is genuinely
         # unavailable (rare).
-        return ["geniesim_cli", "geniesim_assets", "geniesim_benchmark", "geniesim_ros"]
+        return [
+            "geniesim_cli",
+            "geniesim_assets",
+            "scene_augmentation",
+            "geniesim_benchmark",
+            "geniesim_ros",
+        ]
     peers: list[str] = []
     # Always include the umbrella itself as a tier-1 source for deps
     # parsing — its `[project].dependencies` may include third-party
@@ -98,7 +104,7 @@ def discover_tier1_packages() -> list[str]:
     peers.append("geniesim")
     for raw in parse_dependencies_array(umbrella):
         name = _strip_specifier(raw)
-        if name.startswith("geniesim"):
+        if name.startswith("geniesim") or name == "scene_augmentation":
             peers.append(name)
     return peers
 

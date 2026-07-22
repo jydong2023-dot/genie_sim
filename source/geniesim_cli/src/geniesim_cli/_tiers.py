@@ -64,7 +64,7 @@ def _strip_specifier(req: str) -> str:
 
 
 def _is_geniesim_peer(name: str) -> bool:
-    return name.startswith("geniesim")
+    return name.startswith("geniesim") or name == "scene_augmentation"
 
 
 # --------------------------------------------------------------------------

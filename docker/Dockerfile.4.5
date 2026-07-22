@@ -185,6 +185,7 @@ COPY docker/collect_deps.py /tmp/collect_deps.py
 COPY source/geniesim_cli/pyproject.toml /tmp/source/geniesim_cli/pyproject.toml
 COPY source/geniesim/pyproject.toml /tmp/source/geniesim/pyproject.toml
 COPY source/geniesim_benchmark/pyproject.toml /tmp/source/geniesim_benchmark/pyproject.toml
+COPY source/scene_augmentation/pyproject.toml /tmp/source/scene_augmentation/pyproject.toml
 COPY source/geniesim_ros/pyproject.toml /tmp/source/geniesim_ros/pyproject.toml
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     python3 /tmp/collect_deps.py /tmp/source > /tmp/geniesim_deps.txt && \

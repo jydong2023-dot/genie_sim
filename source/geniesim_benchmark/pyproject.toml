@@ -21,6 +21,7 @@ classifiers = [
 dependencies = [
     "geniesim_cli",
     "geniesim_assets",
+    "scene_augmentation",
     "isaacsim",
     "colorama",
     "cv-bridge",

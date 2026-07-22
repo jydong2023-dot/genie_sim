@@ -23,6 +23,7 @@ installs in topological order.
 |---|---|---|---|
 | 🧞 [`geniesim_cli/`](geniesim_cli/) | CLI dispatcher — the `geniesim` console script | [AGENTS.md](geniesim_cli/AGENTS.md) | — |
 | 🌐 [`geniesim/`](geniesim/) | Umbrella meta-package — pulls in every peer | — | — |
+| 🎛️ [`scene_augmentation/`](scene_augmentation/) | Simulator-independent scene-bundle augmentation and contact sheets | [README.md](scene_augmentation/README.md) | — |
 | 🧪 [`geniesim_benchmark/`](geniesim_benchmark/) | Benchmark tasks, scoring, LLM eval configs *(legacy stack — Isaac Sim direct; will be refactored onto `geniesim_ros`)* | [README.md](geniesim_benchmark/README.md) | [run-benchmark](geniesim_benchmark/skills/run-benchmark/SKILL.md), [check-inference](geniesim_benchmark/skills/check-inference/SKILL.md) |
 | 🏗️ [`geniesim_generator/`](geniesim_generator/) | Scene generation, procedural layout, LLM scene language | [AGENTS.md](geniesim_generator/AGENTS.md) | [generate-scene](geniesim_generator/skills/generate-scene/SKILL.md), [search-assets](geniesim_generator/skills/search-assets/SKILL.md), [deploy-generator](geniesim_generator/skills/deploy-generator/SKILL.md) |
 | ⚡ [`geniesim_ros/`](geniesim_ros/) | **Genie Sim RT Engine** — realtime interactive ROS 2 simulation | [README.md](geniesim_ros/README.md) · [AGENTS.md](geniesim_ros/AGENTS.md) | [build-workspace](geniesim_ros/skills/build-workspace/SKILL.md), [launch-scene](geniesim_ros/skills/launch-scene/SKILL.md), [moveit-wbc](geniesim_ros/skills/moveit-wbc/SKILL.md), [add-robot](geniesim_ros/skills/add-robot/SKILL.md), [teleop-bridge](geniesim_ros/skills/teleop-bridge/SKILL.md), [record-episode](geniesim_ros/skills/record-episode/SKILL.md), [debug-physics](geniesim_ros/skills/debug-physics/SKILL.md), [material-override](geniesim_ros/skills/material-override/SKILL.md) |
@@ -36,6 +37,8 @@ independent and parallel today:
 
 ```
 geniesim_cli      → install + docker
+   │
+   ├── scene_augmentation  simulator-independent scene bundle transforms
    │
    ├── geniesim_benchmark   legacy benchmark runtime (Isaac Sim direct)
    │                        — run / score / evaluate policies headless
@@ -79,11 +82,14 @@ graph TD
   geniesim_ros["<b>geniesim_ros</b><br/>⚡ RT Engine"]
   geniesim_teleop["<b>geniesim_teleop</b><br/>🎮 VR / Pico"]
   geniesim_world["<b>geniesim_world</b><br/>🌍 pano → 3D world (own env)"]
+  scene_augmentation["<b>scene_augmentation</b><br/>🎛️ scene augmentation core"]
 
   geniesim -->|build| geniesim_cli
+  geniesim -->|build| scene_augmentation
   geniesim -->|build| geniesim_benchmark
   geniesim -->|build| geniesim_ros
   geniesim_benchmark ==>|exec| geniesim_cli
+  geniesim_benchmark ==>|exec| scene_augmentation
   geniesim_generator ==>|exec| geniesim_cli
   geniesim_ros ==>|exec| geniesim_cli
   geniesim_teleop ==>|exec| geniesim_cli

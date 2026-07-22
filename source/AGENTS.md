@@ -20,6 +20,7 @@ installs in topological order.
 |---|---|---|---|---|
 | `geniesim/` | umbrella (`geniesim`) | [README](geniesim/README.md) | — | — |
 | `geniesim_cli/` | `geniesim_cli` — owns the `geniesim` console script | [README](geniesim_cli/README.md) | [AGENTS](geniesim_cli/AGENTS.md) | — |
+| `scene_augmentation/` | `scene_augmentation` — simulator-independent scene augmentation core | [README](scene_augmentation/README.md) | [AGENTS](scene_augmentation/AGENTS.md) | — |
 | `geniesim_benchmark/` | `geniesim_benchmark` — benchmark tasks + scoring (**legacy stack — Isaac Sim direct; refactor planned onto `geniesim_ros`**) | [README](geniesim_benchmark/README.md) | — | [skills/](geniesim_benchmark/skills/) |
 | `geniesim_generator/` | `geniesim_generator` — LLM-driven scene generation (gated) | [README](geniesim_generator/README.md) | [AGENTS](geniesim_generator/AGENTS.md) | [skills/](geniesim_generator/skills/) |
 | `geniesim_ros/` | `geniesim_ros` — Genie Sim RT Engine (ROS 2 workspace) | [README](geniesim_ros/README.md) | [AGENTS](geniesim_ros/AGENTS.md) | [skills/](geniesim_ros/skills/) |

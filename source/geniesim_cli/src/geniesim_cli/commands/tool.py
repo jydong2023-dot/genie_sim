@@ -87,6 +87,7 @@ _ANNOTATIONS: dict[str, dict] = {
     "geniesim_teleop": {"note": "🎮 VR / Pico"},
     "geniesim_world": {"status": "leaf", "note": "🌍 pano → 3D world (own env)"},
     "geniesim_generator": {"note": "🏗️ scene gen (optional extra)"},
+    "scene_augmentation": {"note": "🎛️ scene augmentation core"},
 }
 
 # Cross-package data-flow edges that are not in pyproject.toml deps but
@@ -163,9 +164,14 @@ def _strip_specifier(req: str) -> str:
 
 
 def _collect_peers(repo_root: Path) -> dict[str, dict]:
-    """Glob source/geniesim_*/pyproject.toml, merge with annotations."""
+    """Collect GenieSim peers plus explicitly registered first-class packages."""
     out: dict[str, dict] = {}
-    for pj in sorted((repo_root / "source").glob("geniesim*/pyproject.toml")):
+    pyprojects = list((repo_root / "source").glob("geniesim*/pyproject.toml"))
+    pyprojects.extend(
+        repo_root / "source" / name / "pyproject.toml"
+        for name in ("scene_augmentation",)
+    )
+    for pj in sorted(path for path in pyprojects if path.is_file()):
         info = _read_pyproject(pj)
         name = info["name"]
         ann = _ANNOTATIONS.get(name, {})
@@ -599,7 +605,12 @@ def _is_external_url(target: str) -> bool:
 def _enumerate_cli_peers(repo: Path) -> list[Path]:
     """Return every first-class peer dir under source/geniesim_*/ that
     has a pyproject.toml. Sorted, stable order."""
-    return sorted(p.parent for p in (repo / "source").glob("geniesim*/pyproject.toml"))
+    paths = list((repo / "source").glob("geniesim*/pyproject.toml"))
+    paths.extend(
+        repo / "source" / name / "pyproject.toml"
+        for name in ("scene_augmentation",)
+    )
+    return sorted(path.parent for path in paths if path.is_file())
 
 
 def _enumerate_ros_packages(repo: Path) -> list[Path]:

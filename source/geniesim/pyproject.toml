@@ -26,6 +26,7 @@ classifiers = [
 dependencies = [
     "geniesim_cli",
     "geniesim_assets",
+    "scene_augmentation",
     "geniesim_benchmark",
     "geniesim_ros",
 ]
