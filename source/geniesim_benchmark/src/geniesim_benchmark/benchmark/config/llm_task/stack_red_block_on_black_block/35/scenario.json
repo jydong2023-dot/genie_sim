@@ -1,0 +1,24 @@
+{
+  "background_usd": "background/study_room/study_4/background.usda",
+  "dimension": "combined",
+  "instance_id": 35,
+  "light_config": {
+    "intensity": 500,
+    "temperature": 7000
+  },
+  "parameters": {
+    "black_pose": {
+      "x": -0.109114,
+      "y": 0.037602,
+      "yaw_deg": -13.071364
+    },
+    "red_pose": {
+      "x": 0.110649,
+      "y": 0.203658,
+      "yaw_deg": 9.122147
+    },
+    "table_height_offset": 0.05
+  },
+  "scenario_seed": 20260755,
+  "split": "stress"
+}

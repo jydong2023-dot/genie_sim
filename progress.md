@@ -1,0 +1,109 @@
+# Genie Sim Code Analysis Progress
+
+## Session Log
+- 2026-07-22: Started phase 19 after user approval: extracting the independent core package as `source/scene_augmentation` while retaining GenieSim Benchmark preview/runtime adapters.
+- 2026-07-22: Created the `scene_augmentation` package scaffold and standalone CLI, moved the 700-line generator core, extracted generic contact-sheet composition, converted the old generator module into a compatibility re-export, and wired Benchmark/umbrella/bootstrap/Docker metadata dependencies.
+- 2026-07-22: Completed phase 19. Added package docs/profile/tests, preserved the Benchmark preview adapter, updated module maps and generated dependency DAG, verified 46 tests, syntax, whitespace, core boundary, tier/Docker peer ordering, standalone and compatibility CLI smokes, and a Python 3.11 wheel build.
+- 2026-07-22: Started phase 18 to produce an exact host/container runbook for end-to-end scene augmentation and Isaac preview, including container startup and output locations.
+- 2026-07-22: Completed phase 18. Inspected Docker/CLI contracts and the live `geniesim3` container, verified host checkout/assets mounts, user-local `geniesim`, `omni_python`, system preview dependencies, `clean_the_desktop` config matching, current instance range 0-9, and container-side object discovery.
+- 2026-07-22: Started phase 17: changing generic augmentation to write back into the original task directory, append from the maximum numeric instance by default, replace only with `--replace-generated`, preview the exact generated IDs by default, and compose all archived camera images into one contact sheet.
+- 2026-07-22: Completed phase 17. Added append/replace allocation, exact benchmark instance selection, default per-instance three-camera previews, generic contact-sheet generation, config auto-discovery, documentation, and Pillow dependency declaration. All 43 benchmark tests pass; syntax, CLI help, whitespace, append, repeated replace, OpenUSD stage-open, and preview dry-run checks passed.
+- 2026-07-22: Attempted one fresh host Isaac preview. Exact ID propagation reached the child command, but the host installation failed on its container-only `/workspace`/Isaac extension assumptions; no simulator container is currently available. The failure metadata remains under `/tmp/geniesim-preview-gallery-real` and no task scene was changed.
+- 2026-07-21: Started refactoring the red/black-specific scenario generator into a generic single-scene llm_task augmentation tool. Traced lighting/background sidecars through `scenario_config.py` and confirmed they are applied at benchmark runtime even though they are not authored into the task USDA.
+- 2026-07-21: Implemented the config-driven generic engine, retained the legacy no-argument generator, added automatic/explicit target discovery, portable USD sublayer overrides, texture copying, metadata synchronization, safe in-place staging, CLI inspection, an example profile, and Chinese documentation.
+- 2026-07-21: Generic and legacy targeted tests reached 22 passing. A real six-scene smoke output parsed/composed successfully with OpenUSD and exposed the expected object and material overrides.
+- 2026-07-21: Finished generic scenario augmentation: 33 scoped benchmark tests pass, scripts compile, the example profile parses, whitespace/diff checks pass, and real table plus no-table tasks generate successfully. OpenUSD confirmed portable sublayers and the stronger table material binding.
+- 2026-07-22: Started removing the red/black generator compatibility mode. Selected `generate_task_scenarios.py` as the task-neutral entry point and identified active documentation and legacy tests that require migration.
+- 2026-07-22: Deleted `generate_stack_red_black_scenarios.py`, added the required-task `generate_task_scenarios.py`, migrated active docs, replaced legacy generator tests with task-neutral CLI/engine and scenario-runtime tests, and reached 28 passing scoped tests.
+- 2026-07-22: Completed the rename/removal. Verified no old generator name, legacy matrix API, or red/black constant remains in active scripts/docs/tests; table and no-table smoke suites produced 10 valid OpenUSD stages.
+- 2026-07-21: Completed the permanent Open WebUI save-action repair. Added safe Responses/raw-DSL extraction, stale-reply protection, deterministic content/manifest export sync, README/AGENTS maintenance guidance, and eight passing regression tests.
+- 2026-07-21: Backed up and updated the live `save_code_to_file` database entry to 0.2.0, restarted Open WebUI, confirmed health, verified exact live/export hash parity, and successfully extracted the 2,437-character `root_scene` program from the original failing chat.
+- 2026-07-21: Started permanent repair of the Open WebUI `Save Code to File` action after confirming the live chat stores generated code in `originalContent`/Responses `output`, not `content`, and emits raw Python without fences.
+- Added seven regression tests covering legacy fences, `originalContent`, Responses `output_text`, reverse message scanning, raw-text rejection, actual file saving, and source/export parity. The default Python lacks the action's `aiofiles` dependency, so validation is moving to the existing generator Conda environment.
+- 2026-07-21: Started natural-language scene-generation setup; read the `generate-scene` and `deploy-generator` workflows.
+- Confirmed the OpenAI key file is present and inspected only its YAML type/field structure, without exposing the secret.
+- Confirmed the generator Compose stack is not configured in this shell and current GPU occupancy leaves insufficient headroom for the documented VL backend.
+- Verified the provided key against the OpenAI API without printing it: current chat-model access and a minimal 1024-dimensional embedding request both succeeded.
+- Open WebUI official-doc search failed once with a response decode error; switched to a direct official documentation fetch instead of repeating the same call.
+- Wrote and committed the approved design (`1b30bb3`) and inline implementation plan (`1f5d484`).
+- Initial isolated-worktree creation failed during an unrelated Git LFS mesh download because the remote LFS budget is exhausted; proceeding with a skip-smudge worktree after state inspection.
+- 2026-07-21: Started a read-only audit of the new `geniesim-generator` Conda environment and the official generator demos.
+- Confirmed the environment's supported Python version, editable package locations, core/MCP/RAG dependency presence, and recorded the two unrelated missing ROS dependencies reported by `pip check`.
+- Verified all core and MCP/RAG imports plus the 1,245-item asset index; confirmed host `torch` is absent and inspected the shipped demo program/output path before execution.
+- Ran the shipped direct scene compiler successfully at the process level, then found its generated USD payload is unresolved because the serializer points at a nonexistent source-tree `assets` directory.
+- Audited Docker/GPU/profile prerequisites: Docker and RTX 4090 are ready, but the stack is down, the assets mount variable is unset, text credentials are empty, and VL weights are absent.
+- Confirmed Compose parses when the assets path is supplied, but no generator services are running; lightweight MCP info/file servers import successfully.
+- Confirmed live preview is intentionally unavailable in this environment because benchmark/Isaac/Omni modules are absent.
+- Completed fresh verification: a second compiler run reproduced the unresolved payload, selected scripts compiled with a temporary bytecode cache, required core/MCP/RAG modules were present, and the environment's two ROS dependency warnings remained unchanged.
+- 2026-07-21: User approved the generator path-resolution strategy; wrote the focused design specification covering precedence, validation, errors, and tests.
+- Self-reviewed and committed the generator path-resolution design as `0116574`, staging no unrelated workspace changes.
+- User confirmed the written design; created a task-by-task TDD implementation plan for resolver, USD payload, app output, docs, and real smoke verification.
+- Self-reviewed the implementation plan against the approved spec; no missing requirements, placeholders, or signature mismatches were found.
+- Implemented generator path discovery with TDD in `fix/generator-path-resolution`: 9 resolver tests, 2 USD tests, and 1 subprocess integration test.
+- Verified a real no-override demo wrote into the sibling benchmark package and composed the installed beverage-bottle payload successfully.
+- Merged the feature branch locally into `main` as `ab050e2`; reran all 12 tests and syntax compilation successfully, then removed the worktree and branch.
+- Moved only task-created smoke artifacts to `/tmp`, including both invalid pre-fix instances and the valid post-fix demo bundle.
+- Started analysis for `/home/user/djy/genie_sim`.
+- Confirmed no existing planning files were present before creating these notes.
+- Observed existing uncommitted changes in `README.md`, data collection files, one ROS scene config, and new demo/download files.
+- Read root `AGENTS.md`, first-principles guide, `source/AGENTS.md`, root README excerpt, and `source/README.md`.
+- Listed source-level docs, package directories, `pyproject.toml` entry markers, and initial source files.
+- Read all first-class `pyproject.toml` files plus `data_collection` metadata and `geniesim_world/setup.py`.
+- Read package-level AGENTS files for CLI, ROS, generator, teleop, world, and data_collection.
+- Read CLI dispatcher and representative command modules for benchmark, data_collection, ros, and docker.
+- Read command module execution paths, workspace resolution, and tier model helpers.
+- Listed ROS packages and key launch/config/source files; read `geniesim_ros` shim/bootstrap/setup packaging code.
+- Read core ROS package guides, `app.launch.py` dispatch section, stable/experimental launcher YAMLs, and G2 scene YAML examples.
+- Read benchmark README, app entry, task manager, parameter server, task benchmark flow, and package directory layout.
+- Read generator app/helper/MCP entry points and source directory layout.
+- Read teleop entry, bridge, Pico device, robot descriptor, and main loop.
+- Read world Click CLI, SHARP runner, predictor wrapper, DA360 utility, Gaussian ops, and CUDA requirements.
+- Read data_collection host run script, container entrypoint, server/client Python entries, directory layout, and task examples.
+- Checked `.github`, pre-commit hooks, test paths, audit references, and current tracked git diff summary.
+- Read RLinf integration README/source entries and scene_reconstruction AGENTS/README/layout.
+- Counted source file categories and checked final git status.
+- Closed early open questions and prepared final Chinese summary.
+- Started a focused follow-up analysis of `source/geniesim_benchmark`, preserving all existing source changes.
+- Switched to designing a new two-block stacking benchmark task; began tracing existing stack task assets and ADER scoring conventions.
+- Confirmed the minimal per-instance runtime bundle and separated optional graph/catalog metadata from hard runtime dependencies.
+- Fixed the task semantics to ordered red-on-black placement and located the separate asset repository for exact asset selection.
+- Confirmed the asset index is derived from structured per-asset metadata and can be queried for exact red/black cube candidates.
+- Found standard red cube assets across 2-5 cm sizes; found no exact black cube in the structured building-block index, so material override feasibility is being checked.
+- Confirmed no black or gray cube exists among building-block assets; dark candidates are blue, so a black material override on existing cube geometry is the current recommendation.
+- Confirmed the cube wrapper is editable USD ASCII but its visual material lives in a binary payload; checking the existing runtime material-binding path before finalizing the asset strategy.
+- Found a reusable runtime `OmniPBR` color-binding path, but `BaseEnv` currently hardcodes white. The design will include an optional object-color pass-through unless a better existing task field is found.
+- Found that task loading also forces dynamic object materials back to `general`; shifted the preferred design toward a scene-level USD material override because LLM-task scenes are loaded directly as `sub_usd`.
+- Confirmed the composed cube visual path and settled on a task-local black USD material override as the narrowest existing-asset solution, pending user acceptance.
+- User approved the material strategy and confirmed G2 Omnipicker; preparing the concrete file/change/validation checklist.
+- Selected explicit task name `stack_red_block_on_black_block` and confirmed the required active/passive `Ontop(red, black)` parameter order and G2 init-state registration.
+- Completed the concrete design scope and validation matrix; ready to present it for approval without modifying benchmark source files.
+- User requested a persistent README plus implementation and first-instance verification.
+- Selected inline, in-place execution because the current untracked benchmark tests are part of the user's workspace context; no commit or worktree will be created.
+- Ran the benchmark test baseline before implementation: 6 tests passed.
+- Confirmed the complete scene-info graph shape and exact 5 cm/0.01 kg metadata for asset `benchmark_building_blocks_074`.
+- Created `source/geniesim_benchmark/README_STACK_RED_BLOCK_ON_BLACK_BLOCK.md` as the persistent task reference.
+- Created `source/geniesim_benchmark/docs/superpowers/plans/2026-07-20-stack-red-block-on-black-block.md` and completed its documentation phase; `git diff --check` reported no errors.
+- Added `tests/test_stack_red_block_on_black_block_task.py` before production files.
+- Verified the TDD RED phase: all 6 new tests failed for the expected missing task files/registrations, with no import or syntax failure.
+- Added the task entry YAML and instance `0` bundle (`scene.usda`, `scene_info.json`, `instructions.json`, `problems.json`).
+- Registered the new subtask in G2 initial states, `TASK_STEPS`, and task catalog metadata.
+- Verified the TDD GREEN phase: all 6 new contract tests passed.
+- Completed offline validation: full benchmark tests reported 12 passed, modified Python modules compiled, and `git diff --check` returned clean.
+- Default Python lacks the `pxr` module, so standalone USD composition validation is unavailable; simulator-path validation remains pending.
+- Found a running `geniesim3` Docker container and host Conda environments named `geniesim` and `isaac`; checking them for USD and preview capabilities.
+- Validated the scene layer with OpenUSD from the `geniesim` Conda environment: syntax, payload specs, black material, shader connection, color, and authored binding are all readable.
+- Confirmed the running container has `/workspace` and `/geniesim_assets` mounts but no immediately exposed `geniesim` executable.
+- Attempted full container USD composition; bare `/isaac-sim/python.sh` lacked `pxr`, so container launcher/environment inspection is required before retrying through a different entry path.
+- Initialized `SimulationApp` successfully enough to reach `app ready`, but missing NumPy `libgfortran` search-path errors prevented reliable composition evidence; fixing the process environment before retrying.
+- Fixed the container validation process library path and completed full Kit/OpenUSD composition against real assets.
+- Verified the new task is discoverable by the container CLI and that the black visual mesh binds to the remapped `/Workspace` black material with the intended diffuse color.
+- Ran instance 0 through the G2 Omnipicker headless preview in the existing `geniesim3` container; it exited successfully and wrote all three policy-camera images.
+- Visually checked the preview: exactly one red and one black cube are separated on the table, visible and reachable; the initial no-action evaluation correctly reported `Ontop = 0`.
+- Added a focused contract test that executes the repository's existing `Ontop.update()` method against beside, reversed-stack, insufficient-overlap, and valid red-on-black AABBs.
+- Completed the final verification pass: the full benchmark suite reported 16 passed, all modified Python files compiled, and `git diff --check` returned clean.
+- 2026-07-21: Completed the OpenAI natural-language scene-generation deployment on `main`.
+- Built and started the text MCP asset-search service and Open WebUI; imported the OpenAI workspace, GenieSim scene model, and global save action.
+- Added runtime-only embedding credential loading, OpenAI deployment exports, port 3000, host save-directory mapping, and the required `reasoning_effort: none` model parameter.
+- Ran an end-to-end Chinese prompt through the configured model; it made six asset tool calls, wrote 2,640 bytes of DSL, and compiled `openai_nl_smoke/0` with table, beverage bottle, and bowl payloads.
+- Verified the merged result with 16 unit tests, a live model request with two tool calls, a real asset search, Open WebUI health, and OpenUSD loading of 39 composed prims.
+- Merged `feat/openai-natural-scene` into `main` as `a4ee6bb`, restarted services from the main checkout, and removed the temporary branch/worktree.

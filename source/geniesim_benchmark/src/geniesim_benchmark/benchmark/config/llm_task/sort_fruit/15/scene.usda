@@ -1,0 +1,65 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    subLayers = [@./scene_source.usda@]
+    upAxis = "Z"
+)
+
+over "World"
+{
+    over "Objects"
+    {
+        over "benchmark_lemon_14af8085"
+        {
+            double3 xformOp:translate = (-0.027814, 0.232056, 0.854)
+            quatf xformOp:orient = (0.991248, 0, 0, 0.132017)
+        }
+        over "benchmark_lemon_e7367cc7"
+        {
+            double3 xformOp:translate = (-0.004567, -0.138806, 0.904)
+            quatf xformOp:orient = (1, 0, 0, -0.000625)
+        }
+        over "benchmark_peach_f9dd218c"
+        {
+            double3 xformOp:translate = (0.157415, -0.067246, 0.901)
+            quatf xformOp:orient = (0.976279, 0, 0, 0.216515)
+        }
+        over "benchmark_storage_box_6f5da4a1"
+        {
+            double3 xformOp:translate = (0.066411, -0.0663, 0.858)
+            quatf xformOp:orient = (0.982908, 0, 0, -0.184097)
+        }
+        over "benchmark_storage_box_f0fcda6f"
+        {
+            double3 xformOp:translate = (-0.136426, -0.197162, 0.858)
+            quatf xformOp:orient = (0.998194, 0, 0, 0.06007)
+        }
+        over "table_39e43d9d" (prepend apiSchemas = ["MaterialBindingAPI"])
+        {
+            double3 xformOp:translate = (0, 0, 0.315)
+            rel material:binding = </World/Augmentation/Looks/TableAugmentationMaterial> (
+                bindMaterialAs = "strongerThanDescendants"
+            )
+        }
+    }
+
+    def Scope "Augmentation"
+    {
+        def Scope "Looks"
+        {
+            def Material "TableAugmentationMaterial"
+            {
+                token outputs:surface.connect = </World/Augmentation/Looks/TableAugmentationMaterial/Surface.outputs:surface>
+                def Shader "Surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
+                    float inputs:metallic = 0
+                    float inputs:roughness = 0.8
+                    token outputs:surface
+                }
+            }
+        }
+    }
+}

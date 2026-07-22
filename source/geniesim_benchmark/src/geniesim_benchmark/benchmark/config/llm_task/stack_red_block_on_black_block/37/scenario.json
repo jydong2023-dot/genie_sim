@@ -1,0 +1,24 @@
+{
+  "background_usd": "background/warehouse/warehouse_1/background.usda",
+  "dimension": "combined",
+  "instance_id": 37,
+  "light_config": {
+    "intensity": 500,
+    "temperature": 3000
+  },
+  "parameters": {
+    "black_pose": {
+      "x": -0.035966,
+      "y": -0.011051,
+      "yaw_deg": 23.132342
+    },
+    "red_pose": {
+      "x": 0.081325,
+      "y": -0.074507,
+      "yaw_deg": -0.640464
+    },
+    "table_height_offset": 0.05
+  },
+  "scenario_seed": 20260757,
+  "split": "stress"
+}

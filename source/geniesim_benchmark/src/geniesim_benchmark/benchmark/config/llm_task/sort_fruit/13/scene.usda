@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    subLayers = [@./scene_source.usda@]
+    upAxis = "Z"
+)
+
+over "World"
+{
+    over "Objects"
+    {
+        over "benchmark_lemon_14af8085"
+        {
+            double3 xformOp:translate = (-0.186, 0.019, 0.929)
+        }
+        over "benchmark_lemon_e7367cc7"
+        {
+            double3 xformOp:translate = (0.13, -0.121, 0.979)
+        }
+        over "benchmark_peach_f9dd218c"
+        {
+            double3 xformOp:translate = (0.121, 0.08, 0.976)
+        }
+        over "benchmark_storage_box_6f5da4a1"
+        {
+            double3 xformOp:translate = (0.085, 0.09, 0.933)
+        }
+        over "benchmark_storage_box_f0fcda6f"
+        {
+            double3 xformOp:translate = (0.085, -0.1, 0.933)
+        }
+        over "table_39e43d9d"
+        {
+            double3 xformOp:translate = (0, 0, 0.39)
+        }
+    }
+
+    def Scope "Augmentation"
+    {
+    }
+}

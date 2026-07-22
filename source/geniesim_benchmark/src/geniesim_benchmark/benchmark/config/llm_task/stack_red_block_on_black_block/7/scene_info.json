@@ -1,0 +1,248 @@
+{
+  "layout": {
+    "black_block_000": {
+      "description": {
+        "color": "black",
+        "descriptive_terms": [
+          "small",
+          "black",
+          "geometric",
+          "faceted",
+          "rigid"
+        ],
+        "dimensions": [
+          0.05,
+          0.05,
+          0.05
+        ],
+        "full_description": [
+          "A small cube rendered with a matte black task-local material."
+        ],
+        "materials": [
+          "plastic",
+          "matte"
+        ],
+        "object_category": [
+          "toy",
+          "building_block"
+        ],
+        "semantic_name": [
+          "building_blocks"
+        ],
+        "shape": "cube",
+        "unit": "m"
+      },
+      "keywords": [
+        "black_block",
+        "cube",
+        "building_block",
+        "toy",
+        "region_1"
+      ],
+      "tags": [
+        "root_scene_red_black_000",
+        "table_with_red_black_blocks_000",
+        "red_black_blocks_000",
+        "black_block_000"
+      ],
+      "usd": "benchmark_building_blocks_074",
+      "xyz": [
+        -0.032714,
+        -0.087069,
+        0.885
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.093709,
+        0.9956
+      ]
+    },
+    "red_block_000": {
+      "description": {
+        "color": "red",
+        "descriptive_terms": [
+          "small",
+          "red",
+          "geometric",
+          "faceted",
+          "rigid"
+        ],
+        "dimensions": [
+          0.05,
+          0.05,
+          0.05
+        ],
+        "full_description": [
+          "A small, solid red cube with a matte finish."
+        ],
+        "materials": [
+          "plastic"
+        ],
+        "object_category": [
+          "toy",
+          "building_block"
+        ],
+        "semantic_name": [
+          "building_blocks"
+        ],
+        "shape": "cube",
+        "unit": "m"
+      },
+      "keywords": [
+        "red_block",
+        "cube",
+        "building_block",
+        "toy",
+        "region_0"
+      ],
+      "tags": [
+        "root_scene_red_black_000",
+        "table_with_red_black_blocks_000",
+        "red_black_blocks_000",
+        "red_block_000"
+      ],
+      "usd": "benchmark_building_blocks_074",
+      "xyz": [
+        0.044474,
+        0.10524,
+        0.885
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.071615,
+        0.997432
+      ]
+    },
+    "table_614a6115": {
+      "description": {
+        "color": "white",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs."
+        ],
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "semantic_name": [
+          "table"
+        ],
+        "shape": "rectangular",
+        "unit": "m"
+      },
+      "keywords": [
+        "workspace_table",
+        "table",
+        "furniture",
+        "desktop_with_legs"
+      ],
+      "tags": [
+        "root_scene_red_black_000",
+        "table_with_red_black_blocks_000",
+        "table_614a6115"
+      ],
+      "usd": "benchmark_table_019",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "links": [
+        {
+          "source": "root_scene_red_black_000",
+          "target": "table_with_red_black_blocks_000"
+        },
+        {
+          "source": "table_with_red_black_blocks_000",
+          "target": "table_614a6115"
+        },
+        {
+          "source": "table_with_red_black_blocks_000",
+          "target": "red_black_blocks_000"
+        },
+        {
+          "source": "red_black_blocks_000",
+          "target": "red_block_000"
+        },
+        {
+          "source": "red_black_blocks_000",
+          "target": "black_block_000"
+        }
+      ],
+      "multigraph": false,
+      "nodes": [
+        {
+          "id": "root_scene_red_black_000"
+        },
+        {
+          "id": "table_with_red_black_blocks_000"
+        },
+        {
+          "id": "table_614a6115",
+          "tags": [
+            "workspace_table",
+            "table",
+            "furniture",
+            "desktop_with_legs"
+          ]
+        },
+        {
+          "id": "red_black_blocks_000"
+        },
+        {
+          "id": "red_block_000",
+          "tags": [
+            "red_block",
+            "cube",
+            "building_block",
+            "toy",
+            "region_0"
+          ]
+        },
+        {
+          "id": "black_block_000",
+          "tags": [
+            "black_block",
+            "cube",
+            "building_block",
+            "toy",
+            "region_1"
+          ]
+        }
+      ]
+    }
+  },
+  "scene_id": "table_with_red_black_blocks",
+  "seed": 20260727
+}

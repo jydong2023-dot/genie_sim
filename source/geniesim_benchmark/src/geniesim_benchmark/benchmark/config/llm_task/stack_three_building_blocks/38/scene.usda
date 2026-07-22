@@ -1,0 +1,34 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    subLayers = [@./scene_source.usda@]
+    upAxis = "Z"
+)
+
+over "World"
+{
+    over "Objects"
+    {
+        over "benchmark_building_blocks_0717465e"
+        {
+            double3 xformOp:translate = (-0.199, 0.121, 0.86)
+        }
+        over "benchmark_building_blocks_47d4eb46"
+        {
+            double3 xformOp:translate = (-0.01, 0.198, 0.86)
+        }
+        over "benchmark_building_blocks_67be70a6"
+        {
+            double3 xformOp:translate = (-0.056, -0.239, 0.86)
+        }
+        over "table_614a6115"
+        {
+            double3 xformOp:translate = (0, 0, 0.342)
+        }
+    }
+
+    def Scope "Augmentation"
+    {
+    }
+}

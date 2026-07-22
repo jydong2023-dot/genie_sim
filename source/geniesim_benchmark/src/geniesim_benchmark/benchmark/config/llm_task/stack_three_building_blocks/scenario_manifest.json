@@ -1,0 +1,339 @@
+{
+  "existing_instance_ids_before_run": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+  ],
+  "generated_instance_ids": [
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+  ],
+  "generator": "generic_llm_task_augmentation",
+  "generator_version": 2,
+  "root_seed": 20260720,
+  "scenario_count": 10,
+  "scenarios": [
+    {
+      "dimension": "baseline",
+      "instance_id": 30,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {},
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260750,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "object_pose",
+      "instance_id": 31,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {
+          "benchmark_building_blocks_0717465e": {
+            "xyz": [
+              -0.142249,
+              0.238591,
+              0.885
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.102023,
+              0.994782
+            ]
+          },
+          "benchmark_building_blocks_47d4eb46": {
+            "xyz": [
+              -0.081744,
+              0.110726,
+              0.885
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.048885,
+              0.998804
+            ]
+          },
+          "benchmark_building_blocks_67be70a6": {
+            "xyz": [
+              -0.16627,
+              -0.013066,
+              0.885
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.15115,
+              0.988511
+            ]
+          }
+        },
+        "table_appearance": {},
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260751,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "lighting",
+      "instance_id": 32,
+      "light_config": {
+        "intensity": 1000.0,
+        "temperature": 3000.0
+      },
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {},
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260752,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "table_height",
+      "instance_id": 33,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {},
+        "table_height_offset": -0.05
+      },
+      "scenario_seed": 20260753,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "table_appearance",
+      "instance_id": 34,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {
+          "color": [
+            0.55,
+            0.32,
+            0.15
+          ],
+          "color_name": "red",
+          "metallic": 0.0,
+          "roughness": 0.5
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260754,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "combined",
+      "instance_id": 35,
+      "light_config": {
+        "intensity": 6000.0,
+        "temperature": 5000.0
+      },
+      "parameters": {
+        "object_poses": {
+          "benchmark_building_blocks_0717465e": {
+            "xyz": [
+              -0.050837,
+              0.028803,
+              0.935
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.189342,
+              0.981911
+            ]
+          },
+          "benchmark_building_blocks_47d4eb46": {
+            "xyz": [
+              0.136193,
+              -0.074025,
+              0.935
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.131629,
+              0.991299
+            ]
+          },
+          "benchmark_building_blocks_67be70a6": {
+            "xyz": [
+              -0.193584,
+              0.07202,
+              0.935
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.198334,
+              0.980135
+            ]
+          }
+        },
+        "table_appearance": {
+          "color": [
+            0.18,
+            0.18,
+            0.18
+          ],
+          "color_name": "black",
+          "metallic": 0.0,
+          "roughness": 0.5
+        },
+        "table_height_offset": 0.05
+      },
+      "scenario_seed": 20260755,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "object_pose",
+      "instance_id": 36,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {
+          "benchmark_building_blocks_0717465e": {
+            "xyz": [
+              0.166726,
+              0.083014,
+              0.885
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.069374,
+              0.997591
+            ]
+          },
+          "benchmark_building_blocks_47d4eb46": {
+            "xyz": [
+              -0.141446,
+              -0.170533,
+              0.885
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.205004,
+              0.978761
+            ]
+          },
+          "benchmark_building_blocks_67be70a6": {
+            "xyz": [
+              0.045918,
+              0.131991,
+              0.885
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.124908,
+              0.992168
+            ]
+          }
+        },
+        "table_appearance": {},
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260756,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "lighting",
+      "instance_id": 37,
+      "light_config": {
+        "intensity": 1000.0,
+        "temperature": 7000.0
+      },
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {},
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260757,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "table_height",
+      "instance_id": 38,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {},
+        "table_height_offset": -0.025
+      },
+      "scenario_seed": 20260758,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "table_appearance",
+      "instance_id": 39,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {
+          "color": [
+            0.55,
+            0.32,
+            0.15
+          ],
+          "color_name": "red",
+          "metallic": 0.0,
+          "roughness": 0.5
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260759,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+      "split": "augmented"
+    }
+  ],
+  "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0"
+}

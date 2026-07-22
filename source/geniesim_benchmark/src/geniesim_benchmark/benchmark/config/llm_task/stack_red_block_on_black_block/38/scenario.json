@@ -1,0 +1,24 @@
+{
+  "background_usd": "background/home/home_b_aligned/background.usda",
+  "dimension": "combined",
+  "instance_id": 38,
+  "light_config": {
+    "intensity": 1000,
+    "temperature": 5000
+  },
+  "parameters": {
+    "black_pose": {
+      "x": -0.154292,
+      "y": 0.094693,
+      "yaw_deg": -26.978204
+    },
+    "red_pose": {
+      "x": 0.092358,
+      "y": 0.079572,
+      "yaw_deg": -26.278343
+    },
+    "table_height_offset": -0.05
+  },
+  "scenario_seed": 20260758,
+  "split": "stress"
+}

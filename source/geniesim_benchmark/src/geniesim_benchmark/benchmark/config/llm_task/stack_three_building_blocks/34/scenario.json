@@ -1,0 +1,22 @@
+{
+  "dimension": "table_appearance",
+  "instance_id": 34,
+  "light_config": {},
+  "parameters": {
+    "object_poses": {},
+    "table_appearance": {
+      "color": [
+        0.55,
+        0.32,
+        0.15
+      ],
+      "color_name": "red",
+      "metallic": 0.0,
+      "roughness": 0.5
+    },
+    "table_height_offset": 0.0
+  },
+  "scenario_seed": 20260754,
+  "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+  "split": "augmented"
+}

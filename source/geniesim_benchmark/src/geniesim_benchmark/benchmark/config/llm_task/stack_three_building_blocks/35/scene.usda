@@ -1,0 +1,55 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    subLayers = [@./scene_source.usda@]
+    upAxis = "Z"
+)
+
+over "World"
+{
+    over "Objects"
+    {
+        over "benchmark_building_blocks_0717465e"
+        {
+            double3 xformOp:translate = (-0.050837, 0.028803, 0.935)
+            quatf xformOp:orient = (0.981911, 0, 0, -0.189342)
+        }
+        over "benchmark_building_blocks_47d4eb46"
+        {
+            double3 xformOp:translate = (0.136193, -0.074025, 0.935)
+            quatf xformOp:orient = (0.991299, 0, 0, 0.131629)
+        }
+        over "benchmark_building_blocks_67be70a6"
+        {
+            double3 xformOp:translate = (-0.193584, 0.07202, 0.935)
+            quatf xformOp:orient = (0.980135, 0, 0, -0.198334)
+        }
+        over "table_614a6115" (prepend apiSchemas = ["MaterialBindingAPI"])
+        {
+            double3 xformOp:translate = (0, 0, 0.417)
+            rel material:binding = </World/Augmentation/Looks/TableAugmentationMaterial> (
+                bindMaterialAs = "strongerThanDescendants"
+            )
+        }
+    }
+
+    def Scope "Augmentation"
+    {
+        def Scope "Looks"
+        {
+            def Material "TableAugmentationMaterial"
+            {
+                token outputs:surface.connect = </World/Augmentation/Looks/TableAugmentationMaterial/Surface.outputs:surface>
+                def Shader "Surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
+                    float inputs:metallic = 0
+                    float inputs:roughness = 0.5
+                    token outputs:surface
+                }
+            }
+        }
+    }
+}

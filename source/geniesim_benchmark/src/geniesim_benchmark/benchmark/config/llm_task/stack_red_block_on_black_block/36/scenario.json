@@ -1,0 +1,24 @@
+{
+  "background_usd": "background/kitchen/kitchen_1/background.usda",
+  "dimension": "combined",
+  "instance_id": 36,
+  "light_config": {
+    "intensity": 500,
+    "temperature": 3000
+  },
+  "parameters": {
+    "black_pose": {
+      "x": -0.189924,
+      "y": 0.129516,
+      "yaw_deg": -9.028994
+    },
+    "red_pose": {
+      "x": 0.110244,
+      "y": 0.204718,
+      "yaw_deg": 0.913871
+    },
+    "table_height_offset": -0.025
+  },
+  "scenario_seed": 20260756,
+  "split": "stress"
+}

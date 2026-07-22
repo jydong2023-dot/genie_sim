@@ -1,0 +1,360 @@
+{
+  "existing_instance_ids_before_run": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "generated_instance_ids": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17
+  ],
+  "generator": "generic_llm_task_augmentation",
+  "generator_version": 2,
+  "root_seed": 20260720,
+  "scenario_count": 8,
+  "scenarios": [
+    {
+      "dimension": "baseline",
+      "instance_id": 10,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {},
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260730,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/sort_fruit/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "object_pose",
+      "instance_id": 11,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {
+          "benchmark_lemon_14af8085": {
+            "xyz": [
+              -0.142249,
+              0.238591,
+              0.904
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.102023,
+              0.994782
+            ]
+          },
+          "benchmark_lemon_e7367cc7": {
+            "xyz": [
+              -0.081744,
+              0.110726,
+              0.954
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.048885,
+              0.998804
+            ]
+          },
+          "benchmark_peach_f9dd218c": {
+            "xyz": [
+              -0.16627,
+              -0.013066,
+              0.951
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.15115,
+              0.988511
+            ]
+          },
+          "benchmark_storage_box_6f5da4a1": {
+            "xyz": [
+              -0.162191,
+              -0.173948,
+              0.908
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.087671,
+              0.996149
+            ]
+          },
+          "benchmark_storage_box_f0fcda6f": {
+            "xyz": [
+              -0.198262,
+              0.085017,
+              0.908
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.128099,
+              0.991761
+            ]
+          }
+        },
+        "table_appearance": {},
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260731,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/sort_fruit/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "lighting",
+      "instance_id": 12,
+      "light_config": {
+        "intensity": 6000.0,
+        "temperature": 7000.0
+      },
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {},
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260732,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/sort_fruit/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "table_height",
+      "instance_id": 13,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {},
+        "table_height_offset": 0.025
+      },
+      "scenario_seed": 20260733,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/sort_fruit/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "table_appearance",
+      "instance_id": 14,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {
+          "color": [
+            0.18,
+            0.18,
+            0.18
+          ],
+          "color_name": "black",
+          "metallic": 0.0,
+          "roughness": 0.25
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260734,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/sort_fruit/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "combined",
+      "instance_id": 15,
+      "light_config": {
+        "intensity": 3000.0,
+        "temperature": 9000.0
+      },
+      "parameters": {
+        "object_poses": {
+          "benchmark_lemon_14af8085": {
+            "xyz": [
+              -0.027814,
+              0.232056,
+              0.854
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.132017,
+              0.991248
+            ]
+          },
+          "benchmark_lemon_e7367cc7": {
+            "xyz": [
+              -0.004567,
+              -0.138806,
+              0.904
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.000625,
+              1.0
+            ]
+          },
+          "benchmark_peach_f9dd218c": {
+            "xyz": [
+              0.157415,
+              -0.067246,
+              0.901
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.216515,
+              0.976279
+            ]
+          },
+          "benchmark_storage_box_6f5da4a1": {
+            "xyz": [
+              0.066411,
+              -0.0663,
+              0.858
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.184097,
+              0.982908
+            ]
+          },
+          "benchmark_storage_box_f0fcda6f": {
+            "xyz": [
+              -0.136426,
+              -0.197162,
+              0.858
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.06007,
+              0.998194
+            ]
+          }
+        },
+        "table_appearance": {
+          "color": [
+            0.18,
+            0.18,
+            0.18
+          ],
+          "color_name": "black",
+          "metallic": 0.0,
+          "roughness": 0.8
+        },
+        "table_height_offset": -0.05
+      },
+      "scenario_seed": 20260735,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/sort_fruit/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "object_pose",
+      "instance_id": 16,
+      "light_config": {},
+      "parameters": {
+        "object_poses": {
+          "benchmark_lemon_14af8085": {
+            "xyz": [
+              -0.079153,
+              0.089617,
+              0.904
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.248705,
+              0.968579
+            ]
+          },
+          "benchmark_lemon_e7367cc7": {
+            "xyz": [
+              0.042651,
+              0.184755,
+              0.954
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.216746,
+              0.976228
+            ]
+          },
+          "benchmark_peach_f9dd218c": {
+            "xyz": [
+              -0.131546,
+              -0.180399,
+              0.951
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.061421,
+              0.998112
+            ]
+          },
+          "benchmark_storage_box_6f5da4a1": {
+            "xyz": [
+              -0.044983,
+              -0.215823,
+              0.908
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              -0.195857,
+              0.980632
+            ]
+          },
+          "benchmark_storage_box_f0fcda6f": {
+            "xyz": [
+              0.142309,
+              0.036152,
+              0.908
+            ],
+            "xyzw": [
+              0.0,
+              0.0,
+              0.252776,
+              0.967525
+            ]
+          }
+        },
+        "table_appearance": {},
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260736,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/sort_fruit/0",
+      "split": "augmented"
+    },
+    {
+      "dimension": "lighting",
+      "instance_id": 17,
+      "light_config": {
+        "intensity": 3000.0,
+        "temperature": 9000.0
+      },
+      "parameters": {
+        "object_poses": {},
+        "table_appearance": {},
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260737,
+      "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/sort_fruit/0",
+      "split": "augmented"
+    }
+  ],
+  "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/sort_fruit/0"
+}

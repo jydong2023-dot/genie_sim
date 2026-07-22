@@ -1,0 +1,39 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    subLayers = [@./scene_source.usda@]
+    upAxis = "Z"
+)
+
+over "World"
+{
+    over "Objects"
+    {
+        over "table_614a6115" (prepend apiSchemas = ["MaterialBindingAPI"])
+        {
+            rel material:binding = </World/Augmentation/Looks/TableAugmentationMaterial> (
+                bindMaterialAs = "strongerThanDescendants"
+            )
+        }
+    }
+
+    def Scope "Augmentation"
+    {
+        def Scope "Looks"
+        {
+            def Material "TableAugmentationMaterial"
+            {
+                token outputs:surface.connect = </World/Augmentation/Looks/TableAugmentationMaterial/Surface.outputs:surface>
+                def Shader "Surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.55, 0.32, 0.15)
+                    float inputs:metallic = 0
+                    float inputs:roughness = 0.5
+                    token outputs:surface
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,38 @@
+{
+  "config_name": "g2op_manip_clean_the_desktop",
+  "config_path": "/home/user/djy/genie_sim/source/geniesim_benchmark/src/geniesim_benchmark/config/g2op_manip_clean_the_desktop.yaml",
+  "task_name": "study_room_05_g2_op",
+  "sub_task_name": "clean_the_desktop",
+  "model_arc": "corobot",
+  "robot_cfg": "G2_omnipicker.json",
+  "robot_id": "G2",
+  "scene_usd": "background/study_room/study_4/background.usda",
+  "scene_id": "workspace_00",
+  "task_dir": "/home/user/djy/genie_sim/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_14_17/g2op_manip_clean_the_desktop",
+  "started_at": "2026-07-22 11:30:38",
+  "command": [
+    "geniesim",
+    "benchmark",
+    "run",
+    "/home/user/djy/genie_sim/source/geniesim_benchmark/src/geniesim_benchmark/config/g2op_manip_clean_the_desktop.yaml",
+    "--app.headless=true",
+    "--benchmark.preview=true",
+    "--benchmark.num_episode=1",
+    "--benchmark.num_instances=0",
+    "--benchmark.enable_vec=0",
+    "--benchmark.record=false",
+    "--benchmark.output_dir=/home/user/djy/genie_sim/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_14_17/g2op_manip_clean_the_desktop/eval",
+    "--benchmark.instance_ids=14,15,16,17"
+  ],
+  "num_instances": 0,
+  "instance_ids": [
+    14,
+    15,
+    16,
+    17
+  ],
+  "exit_code": 1,
+  "status": "failed",
+  "images": {},
+  "finished_at": "2026-07-22 11:30:38"
+}

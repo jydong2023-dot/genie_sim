@@ -1,0 +1,21 @@
+{
+  "background_usd": "background/warehouse/warehouse_1/background.usda",
+  "dimension": "background",
+  "instance_id": 17,
+  "light_config": {},
+  "parameters": {
+    "black_pose": {
+      "x": -0.04,
+      "y": 0.16,
+      "yaw_deg": 6.875
+    },
+    "red_pose": {
+      "x": -0.16,
+      "y": -0.14,
+      "yaw_deg": -9.166
+    },
+    "table_height_offset": 0.0
+  },
+  "scenario_seed": 20260737,
+  "split": "standard"
+}

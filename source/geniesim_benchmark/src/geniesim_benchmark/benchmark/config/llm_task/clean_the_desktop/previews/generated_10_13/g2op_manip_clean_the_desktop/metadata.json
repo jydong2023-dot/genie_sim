@@ -1,0 +1,51 @@
+{
+  "config_name": "g2op_manip_clean_the_desktop",
+  "config_path": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/config/g2op_manip_clean_the_desktop.yaml",
+  "task_name": "study_room_05_g2_op",
+  "sub_task_name": "clean_the_desktop",
+  "model_arc": "corobot",
+  "robot_cfg": "G2_omnipicker.json",
+  "robot_id": "G2",
+  "scene_usd": "background/study_room/study_4/background.usda",
+  "scene_id": "workspace_00",
+  "task_dir": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop",
+  "started_at": "2026-07-22 02:11:30",
+  "command": [
+    "geniesim",
+    "benchmark",
+    "run",
+    "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/config/g2op_manip_clean_the_desktop.yaml",
+    "--app.headless=true",
+    "--benchmark.preview=true",
+    "--benchmark.num_episode=1",
+    "--benchmark.num_instances=0",
+    "--benchmark.enable_vec=0",
+    "--benchmark.record=false",
+    "--benchmark.output_dir=/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/eval",
+    "--benchmark.instance_ids=10,11,12,13"
+  ],
+  "num_instances": 0,
+  "instance_ids": [
+    10,
+    11,
+    12,
+    13
+  ],
+  "exit_code": 0,
+  "status": "ok",
+  "images": {
+    "10/head": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/10/head.png",
+    "11/head": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/11/head.png",
+    "12/head": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/12/head.png",
+    "13/head": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/13/head.png",
+    "10/left_hand": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/10/left_hand.png",
+    "11/left_hand": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/11/left_hand.png",
+    "12/left_hand": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/12/left_hand.png",
+    "13/left_hand": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/13/left_hand.png",
+    "10/right_hand": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/10/right_hand.png",
+    "11/right_hand": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/11/right_hand.png",
+    "12/right_hand": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/12/right_hand.png",
+    "13/right_hand": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/previews/generated_10_13/g2op_manip_clean_the_desktop/13/right_hand.png"
+  },
+  "finished_at": "2026-07-22 02:12:00"
+}

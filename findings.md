@@ -1,0 +1,306 @@
+# Genie Sim Code Analysis Findings
+
+## In-place augmentation and preview gallery (2026-07-22)
+- Keeping output inside the original task directory preserves the existing task YAML `sub_task_name` and avoids creating duplicate task registrations.
+- Default append mode must allocate IDs from `max(existing numeric directory) + 1`; replace mode can safely reuse IDs starting at zero after staging the selected source instance.
+- The current preview gallery accepts task YAML files rather than scene directories and only supports a sampled count, so exact generated-instance preview requires an explicit instance-ID benchmark option.
+- A generic contact sheet should consume the archived per-instance camera images rather than the simulator debug directory, whose filenames are transient.
+- Implemented exact benchmark selection through `benchmark.instance_ids`; it takes precedence over count-based random sampling and validates missing, duplicate, and malformed IDs.
+- Preview archives now use `<preview>/<instance_id>/{head,left_hand,right_hand}.png`, and the contact sheet includes every camera for every generated instance.
+- A temporary copy of the 40-scene stack task appended IDs 40 and 41, replace mode reduced it to IDs 0 and 1, and a second replacement from the generated instance retained a one-way `scene.usda -> scene_source.usda` composition.
+- OpenUSD opened the replacement stage successfully. Payload warnings in the host Conda environment are expected because `/geniesim_assets` is a simulator/container mount and is absent on the host; the authored stage itself remained valid.
+- A real host preview attempt reached the benchmark CLI and carried `--benchmark.instance_ids=0`, but the installed host launcher expects the simulator container's `/workspace` and Isaac extension layout. No GenieSim simulator container is currently running, so this environment cannot complete a fresh render; the failure is environmental rather than an augmentation/gallery code failure.
+
+## End-to-end host/container runbook (2026-07-22)
+- The benchmark documentation explicitly requires the legacy Isaac-direct runtime to run inside the GenieSim Docker container. Host responsibilities are Docker/NVIDIA setup, mounting the checkout/assets, starting/stopping the container, and inspecting the host-visible outputs.
+- The stable runtime is `geniesim docker5.1`, image `registry.agibot.com/genie-sim/geniesim3:latest`, container `geniesim3`; the default unversioned Docker variant in current CLI source is the unimplemented Isaac Sim 6.0 path, so commands must name `docker5.1` explicitly.
+- `geniesim docker5.1 up --headless` mounts the selected host workspace at `/workspace`, the editable asset checkout at `/geniesim_assets`, cache directories under `~/docker/isaac-sim`, enables all GPUs, and installs tier-1 peers into both system Python and `omni_python` before reporting `GENIESIM_READY`.
+- `geniesim docker5.1 into` enters as the host UID/GID with `/workspace` as cwd. The container profile exports `SIM_REPO_ROOT=/workspace`, `GENIESIM_ASSETS_PATH=/geniesim_assets`, Isaac EULA variables, and the ROS/Isaac environment.
+- Live inspection confirms the local `geniesim3` container is running with `/home/user/djy/genie_sim -> /workspace`, `/home/user/djy/geniesim_assets -> /geniesim_assets`, `GENIESIM_PY_CMD=omni_python`, and both required Python environments. Commands must run as UID/GID 1000 with `HOME=/home/isaac-sim`; running `docker exec` as root hides the user-local `geniesim` executable.
+- The correct existing desktop task is `clean_the_desktop` (not `clean_the_desktop_test`). It has instances 0-9 and a matching `g2op_manip_clean_the_desktop.yaml`, so a four-scene append will generate and preview IDs 10-13 automatically.
+- The generator's `--list-objects` succeeds inside the current container. It finds eight movable objects and no table layout entry, so the generic profile will keep pose/light dimensions and automatically skip unavailable table-only dimensions.
+
+## `scene_augmentation` package extraction (2026-07-22)
+- The pure generator implementation uses only the standard library; contact-sheet composition adds Pillow. Neither needs to import GenieSim Benchmark.
+- Benchmark coupling is limited to task/config auto-discovery, `geniesim benchmark run`, exact `instance_ids`, debug-camera archival, and runtime consumption of `scenario.json` lighting.
+- A direct file move would break hard-coded sibling paths and package installation. The selected structure is a formal `source/scene_augmentation` distribution plus a thin compatibility re-export and Benchmark adapter scripts.
+- The repository tier/bootstrap logic originally accepted only names beginning with `geniesim`. Supporting the explicitly selected `scene_augmentation` name requires a narrow allowlist exception in `_tiers.py` and `docker/collect_deps.py`, plus umbrella/Benchmark dependency declarations and Dockerfile metadata copies.
+- Extraction is complete: the standalone core contains no `geniesim_benchmark` reference, while the old Benchmark module is a compatibility re-export and the existing generator remains the Benchmark-specific orchestration/preview adapter.
+- `scene-augmentation --task-dir ...` generated IDs 40 and 41 in a copied 40-scene task; the historical Benchmark CLI subsequently appended ID 42 through the new package.
+- A supported Python 3.11 build produced `scene_augmentation-3.2.0-py3-none-any.whl` containing the CLI, core, contact-sheet module, and packaged default profile.
+- Tier discovery and Docker entrypoint peer discovery now order `scene_augmentation` before `geniesim_benchmark`; the generated dependency DAG shows both umbrella and Benchmark edges to the new package.
+
+## Open WebUI save-action compatibility (2026-07-21)
+- Recent persisted assistant messages have an empty `content`, while final generated Python is stored in `originalContent` and in Responses-style `output[].content[]` entries of type `output_text`.
+- The generated final Python is raw text without Markdown fences.
+- `server/save_to_local.py` currently reads only `messages[-1].content` and `_extract_code_blocks()` only accepts lines beginning with triple backticks, causing the observed false `No code blocks found` result.
+- A durable fix must scan recent assistant messages, normalize legacy/current content shapes, accept fenced code preferentially, and safely recognize raw GenieSim DSL Python.
+- Open WebUI stores imported actions in its database, so the exported `config/function-save_code_to_file.json` must remain synchronized and be re-imported after source changes.
+
+## Natural-language scene generation deployment (2026-07-21)
+- The project-defined natural-language path is Open WebUI `geniesimscenegen` -> MCP tools on port 8765 -> `LLM_RESULT.py` -> `app.py` -> benchmark scene bundle.
+- `/home/user/djy/genie_sim/source/geniesim_generator/openai_key.yaml` exists and parses as a top-level YAML scalar string, not an `api_key` mapping. Its value was not printed.
+- The current shell has not exported `GENIESIM_ASSETS_DIR`, so Compose interpolation fails before it can report service status.
+- The RTX 4090 currently has about 44.5/49.1 GiB allocated and is at 100% utilization; the local VL embedding profile is not viable until other GPU workloads release memory.
+- OpenAI chat credentials and the default text-profile DashScope embedding credentials are separate concerns; inspect whether the text embedder is generic enough to use OpenAI embeddings before selecting the deployment path.
+- The text embedder supports the generic OpenAI client when `dashscope_mode=false`; the provided key successfully listed `gpt-5.6-sol` and successfully generated a 1024-dimensional `text-embedding-3-small` vector.
+
+## `geniesim-generator` Environment Audit (2026-07-21)
+- Audit started. Conclusions will distinguish core `LLM_RESULT.py -> scene.usda`, MCP asset search, Docker/Open WebUI deployment, and Isaac Sim live preview because they have different prerequisites.
+- Conda environment exists at `/home/user/miniforge3/envs/geniesim-generator` and uses Python 3.11.15, satisfying the package constraint `>=3.10,<3.13`.
+- `geniesim_generator 3.2.0`, `geniesim_cli 3.2.0`, and `geniesim_assets 3.2.0` are editable installs pointing at the active source/assets checkouts.
+- Core dependencies are present: Mitsuba 3.9.0, NetworkX 3.6.1, NumPy 1.26.4, SciPy 1.17.1, PyGraphviz 1.14, transforms3d 0.4.2, and usd-core 26.8.
+- MCP/RAG dependencies are also present (`fastmcp`, `chromadb`, `openai`, `dashscope`); `torch` is not shown in the package list, so the host environment does not currently satisfy the optional `vl` extra, although the documented VL Docker image supplies its own ML stack.
+- `pip check` is not clean: ROS package `generate-parameter-library-py 0.7.3` reports missing `jinja2` and `typeguard`. These are not declared generator dependencies, so their practical impact must be separated from core compilation by smoke testing.
+- Official docs define three distinct paths: deployment (`docker compose` plus credentials/weights), asset search (requires a live MCP gateway), and direct scene compilation (only core imports/assets; no service required). Isaac live preview is an additional external-runtime step.
+- Import discovery succeeds for generator/assets/CLI, Mitsuba, NetworkX, NumPy, SciPy, PyGraphviz, transforms3d, OpenUSD `pxr`, FastMCP, ChromaDB, OpenAI, and Dashscope. `torch` alone is absent among the tested optional modules.
+- Importing `geniesim_assets` initializes the real checkout successfully and reports 1,245 indexed assets; five asset descriptions emit non-fatal empty-description warnings.
+- The shipped `LLM_RESULT.py` is a valid direct-compilation candidate: it randomly chooses one of three known beverage-bottle assets, tilts it 30 degrees, places it, and exposes the required registered `root_scene()`.
+- `app.py` computes `GENIESIM_PATH` as the parent of the source package directory, so in this editable checkout outputs go to `source/geniesim_generator/src/benchmark/config/llm_task/...`, not to the actual `geniesim_benchmark` package. This does not prevent compilation but is an integration/path defect to report separately.
+- The official core demo command exits 0 and produces `graph.dot`, `graph.svg`, `scene_info.json`, `scene.usda`, and an `LLM_RESULT.py` snapshot under `codex_env_smoke_20260721/0`.
+- Despite exit 0, the generated USD is not composition-valid: `utils/usd.py` hardcodes `ASSETS_PATH=<source/geniesim_generator/src>/assets`, while the installed assets live at `/home/user/djy/geniesim_assets`. The authored relative payload resolves to the nonexistent source-tree assets directory, and OpenUSD reports `Could not open asset`. Thus core Python execution works but its output cannot yet be treated as a usable scene.
+- Docker Engine 29.6.2, Compose 5.3.1, NVIDIA runtime/CDI devices, and an RTX 4090 are available. Hardware/runtime prerequisites for either Docker profile are present.
+- The generator Compose stack is not currently configured in this shell or running: `GENIESIM_ASSETS_DIR` is unset, so Compose interpolation fails before status lookup; no listener is present on port 8765.
+- Text profile config exists and has endpoint/model/dimension, but its API key is empty. Therefore the text deployment/search demo cannot currently start successfully without credentials.
+- The documented VL model directory `server/assets_searcher/models/` does not exist. Therefore the VL deployment/search demo cannot currently start successfully until weights/helper code are downloaded, even though GPU support is available.
+- With `GENIESIM_ASSETS_DIR=/home/user/djy/geniesim_assets` supplied explicitly, Compose parses both `text` and `vl` profiles, but `compose ps --all` is empty; no generator service exists yet.
+- The two lightweight MCP modules (`mcp_assets_info`, `mcp_file_server`) import and instantiate their FastMCP servers successfully. The search server is profile-dependent and remains unavailable until a text credential or VL model is provided.
+- `geniesim-generator` lacks `geniesim_benchmark`, `isaacsim`, and `omni`; therefore `scene_viewer.py` cannot run in this environment by design. Preview should run in the existing simulation environment/container after producing a composition-valid USD.
+- Initial `py_compile` failed only because an existing `__pycache__` directory is owned by `nobody:nogroup`; redirecting bytecode cache to `/tmp` made all selected core/light-MCP scripts compile successfully. This is a workspace permission issue, not a Python source error.
+- Fresh final verification reproduced the compiler result: exit code 0, all five expected artifacts present, and payload target absent. Core/MCP/RAG module discovery reported no missing modules; `pip check` still reported only the two missing ROS helper dependencies; Compose remained stopped.
+- The pre-fix audit generated two reproducible invalid instances under generator-local `src/benchmark`; after the fix they were moved to `/tmp` as noted below so the obsolete output directory no longer pollutes the checkout.
+- Path-resolution fix completed: `geniesim_generator.paths` now resolves assets from `GENIESIM_ASSETS_DIR` or the installed assets package, and resolves output from `GENIESIM_GENERATOR_OUTPUT_DIR`, an installed benchmark package, or the sibling benchmark checkout.
+- `utils/usd.py` validates every payload before creating the scene and authors a relative path to the real asset. Missing payloads now raise `FileNotFoundError` without leaving a partial USDA.
+- `app.py` now writes bundles to the resolved real benchmark `llm_task` root instead of generator-local `src/benchmark`.
+- A real default-discovery demo produced all five artifacts, composed 12 prims from one object, and resolved its payload to `/home/user/djy/geniesim_assets`; no `Could not open asset` warning occurred.
+- Final merged verification on `main` passed 12 generator tests and syntax compilation. The fix was merged as `ab050e2`; its worktree and feature branch were removed.
+- The two invalid pre-fix audit instances were moved to `/tmp/geniesim-generator-invalid-smoke-pre-fix-20260721`; the valid worktree smoke bundle is preserved at `/tmp/geniesim-generator-path-fix-smoke-20260721`.
+
+## Findings
+- Root guidance requires evidence-first analysis: follow `AGENTS.md` -> `source/AGENTS.md` -> per-package docs/source.
+- `geniesim_cli` owns the single `geniesim` console script and canonical operator workflows.
+- First-class `geniesim_*` peers: umbrella `geniesim`, CLI, benchmark, generator, ROS RT Engine, teleop, world.
+- `geniesim_benchmark` and `geniesim_ros` are independent parallel stacks today; benchmark is planned to become a layer on top of ROS later.
+- `data_collection`, `rlinf_geniesim`, `scene_reconstruction`, and `external` are separately maintained and not installed by `geniesim bootstrap`.
+- `source/geniesim_cli/pyproject.toml` exposes `geniesim = "geniesim_cli.cli:main"`.
+- `source/geniesim/pyproject.toml` is the umbrella package and drives peer install topology through dependencies/extras.
+- The repository also contains generated/build directories (`devel`, `devel_build`, `devel_log`) outside `source/`.
+- `source/data_collection` has its own `pyproject.toml`, scripts, client/server/common/tasks directories, and is not a first-class `geniesim_*` peer.
+- `geniesim_cli` has only `tomli` as runtime dependency and must stay dependency-root; other peers depend on it.
+- `geniesim_benchmark` carries heavy Isaac Sim / ROS-ish deps and packages many config/assets/scripts under package data.
+- `geniesim_ros` wraps a bundled colcon workspace; Python packaging excludes `src/ros_ws*` and release wheels ship `_ros_install.tar.gz`.
+- `geniesim_generator` is LLM/scene-language focused with optional `mcp`, `rag`, `vl`, `full` extras.
+- `geniesim_teleop` depends on `geniesim_ros`, ships prebuilt motion-control runtime under package data, and exposes `geniesim-teleop`.
+- `geniesim_world` uses `setup.py` metadata with local path dependency on `external/ml-sharp`; DA360 is runtime-loaded from `external/DA360` or configured path/env.
+- `data_collection` package metadata is deliberately only a locator shim; actual deps/scripts remain cwd-relative and Docker-managed.
+- `geniesim_generator` has no `geniesim generator` CLI verb; runtime is script/docker-compose based and relies on `LLM_RESULT.py` -> `app.py` -> scene artifacts.
+- `geniesim_world` is intentionally outside default bootstrap because PyTorch/SHARP/DA360 CUDA dependencies belong in a dedicated environment; generated worlds are not yet a supported `geniesim_ros` scene flow.
+- `geniesim_teleop` public path is `geniesim teleop` CLI; direct console script exists but CLI dispatcher is canonical.
+- `data_collection` `geniesim autocollect run` is host-side Docker orchestration, not an in-container exec; output episodes can be large and land under `recording_data/`.
+- `geniesim_ros` wheel strategy is non-trivial: colcon install tree is archived into `_ros_install.tar.gz` to preserve executable modes.
+- Potential doc drift: `geniesim_cli/AGENTS.md` says deps are empty / old three-distribution wording, while `pyproject.toml` declares `tomli` and current source map lists more peers.
+- `geniesim_cli.cli` is a thin dispatcher: handles WIP prompt for `teleop`, auto-bootstrap for non-skip verbs, then imports `commands/*` lazily.
+- Bootstrap skip verbs include recovery/host/contributor surfaces such as `bootstrap`, `status`, `doctor`, `docker*`, `tool`, `deploy`; most runtime verbs can trigger missing tier-1 bootstrap.
+- `benchmark` resolves `geniesim_benchmark` via `find_spec`, resolves configs by literal/basename/unique substring, then launches package `app/app.py`.
+- `autocollect` resolves `data_collection` via shim, `$GENIESIM_REPO_ROOT`, or cwd walk; task resolution mirrors benchmark but targets JSON templates.
+- `ros` build outputs are anchored in the current working directory (`devel*` for dev, `install/build/log` for release), while workspace source is resolved by `ros_workspace_root`.
+- `docker` is host-only and variant-driven; default `geniesim docker` maps to Isaac Sim 5.1 / `geniesim3`.
+- `benchmark run` and `benchmark check-inference` use `os.execvp`, so the target app/probe owns tty, Ctrl-C, and exit code.
+- `benchmark batch`, `autocollect run/build/up/into`, `docker build/up`, and `ros build` use `subprocess.run` and explicitly propagate failures.
+- `autocollect run` supports a real `--dry-run`; `benchmark run` does not.
+- `ros build cleanup` is interactive and permanently removes current-directory build output buckets after confirmation.
+- `ros_workspace_root()` resolution order is `$GENIESIM_WORKSPACE` -> cwd if colcon workspace -> bundled `geniesim_ros/src/ros_ws`.
+- Tier classification is parsed from `source/geniesim/pyproject.toml` first, installed metadata second; this keeps bootstrap/status/tool behavior tied to umbrella deps/extras.
+- ROS workspace has ten GenieSim packages plus `external/bio_ik` under `src/ros_ws/src`.
+- ROS launch/config surface centers on `genie_sim_bringup`: `scene_*.yaml`, `launcher_*.yaml`, `app.launch.py`, `physics_isaacsim.launch.py`, and `physics_mujoco.launch.py`.
+- `geniesim_ros.__init__` imports `_bootstrap.ensure_ros_install()` immediately; wheel installs extract `_ros_install.tar.gz` on first import, editable installs rely on a locally built `_ros_install/` if present.
+- `geniesim_ros/setup.py` customizes `bdist_wheel` to run `colcon build`, stage `_ros_install`, tar it deterministically, and mark the wheel platform-specific because native ROS binaries are inside the tarball.
+- `genie_sim_bringup` declares G2 as the Tier-1 validated robot; other robots are buildable Tier-2.
+- Stable ROS launcher is `launcher_ovrtx_isaac_physx.yaml`: `genie_sim_engine_isaacsim.py` plus `render_ovrtx`.
+- Newton standalone launchers are experimental and can run Kit-free with optional Newton GL / inline OVRTX visualizer.
+- Scene YAML samples define robot source, initial base/joint pose, viewer camera, sensors, and `scene` asset path.
+- Current `scene_pnp_g2_op.yaml` is user-modified in git status, so treat it as local state rather than baseline upstream behavior.
+- Benchmark stack entry is `geniesim_benchmark/app/app.py`, launched by `geniesim benchmark run`.
+- Benchmark config load flow: defaults/dataclasses -> package `config/config.yaml` -> CLI `--config` and dotted overrides -> `Config` dataclass.
+- `app.py` starts Isaac Sim via `AppLauncher`, creates an Isaac `World`, initializes ROS only when `cfg.app.enable_ros`, then starts `TaskManager`.
+- `TaskManager` runs `TaskBenchmark.main()` in a daemon thread while the main loop steps physics/render and performs cleanup on exit.
+- `TaskBenchmark` is task-config driven: reads `benchmark/config/eval_tasks/*.json`, generates per-task layouts, chooses policy/env by `model_arc`/class, records/evaluates episodes, and supports vectorized corobot evaluation.
+- Benchmark code contains some legacy import/path patterns (`sys.path.append`, broad `from ... import *`, direct global config load at import time), so it is less modular than the CLI/ROS shim.
+- Generator entry `app.py` imports `root_scene` from local `LLM_RESULT.py`, converts the DSL `Shape` tree to layout metadata and graph, then writes `scene.usda`, `scene_info.json`, `graph.dot/svg`, and a copied `LLM_RESULT.py`.
+- Generator output path is computed under `source/geniesim_generator/src/benchmark/config/llm_task/<scene_id>/<n>/`; the directory is created on demand and is not present in a clean tree.
+- `helper.py` is the LLM-facing DSL surface: re-exports scene-language helpers and builds `usd(...)` shapes from `geniesim_assets.ASSETS_INDEX`.
+- Generator MCP asset search server chooses text or VL backend by `EMBEDDING_MODE` and exposes FastMCP stdio tools.
+- Generator file server can write arbitrary requested paths from the MCP caller; operationally this is powerful and should be treated as trusted-local tooling, not exposed broadly.
+- Generator code intentionally uses cwd/script-relative imports (`from helper import *`, `from utils import *`, `sys.path.append` in servers), so running from the documented directory matters.
+- Teleop entry `geniesim_teleop.teleop:main` accepts `--client_host`, `--host_ip`, `--port`, `--robot_cfg`, `--device_type`; only `device_type=pico` is implemented.
+- `TeleOp.run()` starts ROS utilities, initializes the Pico device/server, then loops at 30 Hz parsing arm, waist, gripper, body, reset, recording, and playback commands.
+- Pico input is converted from VR coordinate frames into simulator-local pose/quaternion commands in `devices/pico_device.py`.
+- Teleop lazily reads benchmark `teleop.yaml` and `robot_init_states.py` as plain files rather than importing `geniesim_benchmark`, because benchmark may require Isaac Sim.
+- `bridge.py` maps `/joint_states` -> `/hal/joint_state` and `/hal/joint_cmd` -> `/joint_command`, with playback gating.
+- Teleop has duplicated `_load_robot_init_states` block content and a narrow robot config validator (`omnipicker` or `120s`), which are maintainability limits.
+- `geniesim_world` public CLI is Click-based: `geniesim_world create` plus `debug`.
+- World create flow: copy panorama -> optional Real-ESRGAN -> DA360/SHARP/fused panorama depth -> cubemap export -> SHARP per-face PLY -> optional merged `merged_gaussians.ply`.
+- World depth modes are `da360`, `sharp`, `both`, `fuse`; DA360 output is relative depth clamped to `[1e-4, 1e4]`, fuse aligns DA360 to SHARP meters by median ratio.
+- World supports segmented runs via `--skip-sharp` and `--skip-merge`.
+- World requires local external checkouts/weights (`external/ml-sharp`, `external/DA360`, optional Real-ESRGAN) and pinned PyTorch/CUDA stack for the tested path.
+- World predictor wraps Apple SHARP's `RGBGaussianPredictor` by mutating `__class__` to add optional depth-guided initialization.
+- `data_collection` host script requires editable-installed `geniesim_assets`, grants uid 1234 write access to mounted dirs, runs `docker run -d`, tails logs, and traps exit for container cleanup.
+- `data_collection` container entrypoint sets Isaac/ROS/cuRobo env, installs/mounts assets, launches `data_collector_server.py`, waits 10-15s, then launches `run_data_collection.py`.
+- `data_collection` server starts Isaac `SimulationApp`, a `World`, `CommandController`, and `GrpcServer`; client loads task JSON, generates task variants, creates `IsaacSimRpcRobot`, and runs `DataCollectionAgent`.
+- `data_collection` treats `run_data_collection.py` log containing `job done` as successful completion; otherwise process death is failure.
+- Existing `data_collection/logs`, `recording_data`, and `saved_task` contain run artifacts in the working tree; be careful not to commit generated data accidentally.
+- `.github` contains issue/license templates but no GitHub Actions workflows in this checkout.
+- `.pre-commit-config.yaml` runs Black, license insertion, common file checks, and commitizen; it excludes `source/data_collection/` and scene reconstruction patch dir globally.
+- First-party test surface is sparse: ROS engine script tests under `genie_sim_engine/scripts/tools/`; broader test paths are mostly vendored `scene_reconstruction/third_party/gsplat` and `external/bio_ik`.
+- Repo docs reference CI-style audits (`geniesim tool deps-dag`, `geniesim tool ros-dag`, `geniesim tool docs`), but workflows are not present locally.
+- Existing tracked local diffs before this analysis affect `README.md`, `data_collection/common/base_utils/transform_utils.py`, `data_collection/scripts/run_data_collection.sh`, and `scene_pnp_g2_op.yaml`.
+- `rlinf_geniesim` integrates Genie Sim with RLinf through Docker, MuJoCo physics processes, Isaac Sim rendering, and shared memory rather than through the `geniesim` CLI.
+- RLinf shared memory layout has three channels: frame SHM for images, per-env control SHM for state/action/info, and global step SHM for request/reply sync.
+- `rlinf_geniesim/scripts/sim_server.py` is the container-side supervisor: reads JSON config, cleans stale SHM, creates `GenieSimVectorEnv`, waits for renderer SHM, writes readiness/error/idle sentinels, and handles stop/start cycles.
+- `GenieSimVectorEnv` starts `ProcessManager` unless attaching to an existing run, opens frame/control/step SHMs, and exposes vectorized sim state/action synchronization.
+- `scene_reconstruction` is a separate Dockerized COLMAP/HLoc/gsplat/PGSR/Difix3D pipeline; main entrypoint is `real2sim_environment_entrypoint.sh` inside third_party/gsplat examples.
+- `scene_reconstruction` has strict pinned-dependency/patch checksum and input-output layout contracts; output `gs-asset/` is the downstream consumable.
+- Source inventory scale: about 13,720 files under `source/`, including about 536 Python files, 108 C/C++/header files, and 3,734 YAML/JSON files.
+- Current untracked files include this analysis' `task_plan.md`, `findings.md`, `progress.md`, plus pre-existing `download_assets.py` and `source/data_collection/DATA_COLLECTION_DEMO.md`.
+
+## Open Questions
+- Closed: actual entry points and package metadata were verified from `pyproject.toml`, `setup.py`, and source entry files.
+- Closed: ROS workspace package list and launch/config boundaries were inspected from `package.xml`, `AGENTS.md`, launch files, and YAML examples.
+
+## Focused `geniesim_benchmark` Follow-up
+- The package contains roughly 3,818 files; the inventory is dominated by packaged `benchmark/config/llm_task/**` scene/task artifacts rather than Python modules.
+- `pyproject.toml` defines a full simulation distribution, not a lightweight scorer: direct runtime dependencies include `isaacsim`, `cv-bridge`, `geniesim_assets`, geometry/message libraries, and `geniesim_cli`.
+- Package data deliberately ships task YAML, eval JSON, USD scenes, graph artifacts, robot/curobo configs, prompts, URDFs, and scripts.
+- Current local additions include `scripts/preview_task_gallery.py`, `scripts/__init__.py`, and `tests/test_preview_task_gallery.py`; these require separate review because they were absent from the earlier repository-wide analysis.
+- `app/app.py` performs substantial import-time work: mutates `sys.path`, repairs environment variables, loads YAML/CLI config, creates Isaac `SimulationApp`, enables the ROS2 bridge, and waits for `rclpy`; importing this module is therefore equivalent to starting much of the runtime.
+- ROS context initialization is opt-in (`app.enable_ros`), but the ROS2 bridge extension and `rclpy` import wait are unconditional, so nominally ROS-free evaluation still requires the bridge/import to become available.
+- The main thread owns `World.step()`, physics callbacks, render callbacks, and cleanup; `TaskManager` launches `TaskBenchmark.main()` in a daemon thread and shares `APICore` with the main loop.
+- Config precedence is dataclass defaults -> package `config/config.yaml` -> optional custom `--config` YAML -> recognized CLI flags. `parse_known_args()` discards still-unknown arguments inside the app.
+- Core complexity is concentrated in `app/controllers/api_core.py` (about 3,000 lines), while the benchmark orchestrator is 830 lines; the package boundary is broad and stateful rather than split into small services.
+- `TaskBenchmark` resolves a top-level eval-task JSON, injects CLI-selected subtask/generalization options, generates temporary episode JSON under `benchmark/saved_task/<task>`, selects scene instances, creates/reuses a policy, creates an env per instance, evaluates episodes, writes `EvaluationSummary`, then deletes the generated task folder.
+- Vectorized execution is enabled only when `enable_vec > 1` and `model_arc == "corobot"`; it processes scene instances in batches and clears cloned stage state between batches. All other policy types silently fall back to serial after a warning.
+- Serial policy objects are intentionally reused across scene instances; environments are recreated per instance. The dormant `_ws_client` cache is not wired into policy construction, while `CoRobotPolicy` owns its own connection.
+- `check_task()` logs an unknown `task_name` as a "self-defined" task but leaves the full known task list unchanged, so an unknown name can trigger evaluation of every packaged eval task rather than just the requested custom task.
+- The `robot` fallback in `_evaluate_policy_impl()` is effectively unreachable for missing robot config: code mutates `self.task_config["robot"]["robot_init_pose"]` before checking whether `"robot"` exists. Current configs therefore rely on `robot` being mandatory despite the fallback branch.
+- Episode seeds are reset to the same `seed + instance_id` before every episode for an instance; this favors reproducibility but means repeated episodes do not receive independent NumPy randomness at this layer.
+- Serial evaluation uses a render-request reference count: fresh observations hold rendering; replaying a policy action chunk drops it so the main thread can skip costly frames when on-demand rendering is enabled. A `finally` block prevents a leaked render request across episodes.
+- Inference exhaustion (`InferenceUnavailableError`) propagates to abort the entire run and remove the in-progress result file; other episode exceptions are re-raised by `evaluate_episode()` but then caught in `_evaluate_policy_impl()` and merely break the current episode loop, so they do not trigger the same whole-run result cleanup.
+- The serial loop invokes end callbacks using local variable `action`; if `DataCourier.loop_ok()` is false before the first loop iteration, `action` is unbound. Normal operation presumably enters at least one iteration, but the function has an uncovered shutdown-edge failure.
+- Vector mode clones N environments on one USD stage, forks per-env `APICore` views, shallow-copies `DataCourier`, and creates one `CoRobotPolicy`/WebSocket connection per env. It does not reuse the serial hook/interactive/recording flow.
+- Vector timing normalizes per-env active durations so their sum equals parallel batch wall-clock time; scores remain per env, but reported `duration` is an accounting allocation rather than each env's literal wall time.
+- `BaseEnv` loads a generated episode JSON, mutates placement-task passive objects to mass 10, instantiates USD objects/materials/lights, and applies base/joint/light/PD/camera/material/HDR generalization before evaluation.
+- Robot/task initialization has a hidden hard invariant: `init_arm`, `init_head`, `init_waist`, etc. are assigned only when `TASK_INFO_DICT[sub_task_name][robot_cfg]` exists, but `get_shared_ikfk_solver(self.init_arm, ...)` is called unconditionally. A novel self-defined subtask without that mapping fails during env construction.
+- `PiEnv` observations are dictionaries of RGB images, named joint-state groups, and computed end-effector poses. Actions are arm/gripper/waist joint targets applied in one physics-loop batch; images are skipped during action-chunk replay and fetched again only when inference is needed.
+- `PiEnv.__init__()` calls `super(..., need_setup=True)`, whose `BaseEnv.__init__()` dynamically invokes `PiEnv.load_task_setup()`, then calls `load_task_setup()` again itself; `LLMTask` is therefore constructed twice in normal setup.
+- `LLMTask` loads per-scene `instructions.json`; missing/invalid data falls back to a default instruction instead of failing. It supports full-instruction and subtask modes, but subtask mode downgrades unless both `subtask_steps` and a matching `TASK_SUBTASK_STEPS` scoring definition exist.
+- Subtask checkers are ADER actions created lazily and tagged in the shared `task_progress`; checker state is ticked only when `PiEnv` calls `task.step()` every 30 environment steps. `step_out` advances even an unpassed checker, so timeout advancement is part of scoring semantics.
+- `CoRobotPolicy` speaks a plain `ws://` MessagePack protocol. Each request sends three JPEG cameras, arm/gripper/waist/head states, prompt, robot/task identifiers, episode status, and flattened checker scores; depth encoding exists but is currently disabled in the payload.
+- The server response is an action chunk. The policy validates matching left/right control kinds (`JOINT_ABS` or `EEF_ABS`), buffers chunk entries, replays them without new images, smooths joint-space actions, or converts absolute EEF poses through IK.
+- Response shape validation is partial: left-arm chunk length drives indexing into right-arm/effectors/optional fields without explicit length or dimension checks. Malformed inference output fails later as indexing/shape errors rather than a focused protocol error.
+- Connectivity retries use capped exponential backoff with jitter and default to 30 consecutive attempts (documented as roughly 13 minutes). Exhaustion calls `sys.exit(1)`; consequently `InferenceUnavailableError` is currently never raised by this path, and the orchestrator's typed exception catches are dead while its broader `BaseException` cleanup is the effective abort path.
+- `CoRobotPolicy` opens an unauthenticated WebSocket and has no application-level request timeout; availability depends on the WebSocket implementation's keepalive/ping behavior. This is appropriate only for a trusted inference network boundary.
+- Several directly imported runtime libraries (`numpy`, `scipy`, `opencv-python`, `websockets`, `typing_extensions`) are absent from this package's declared dependencies and appear to be assumed transitive/container-provided, weakening standalone installation reproducibility.
+- The external `geniesim benchmark` CLI locates the installed package with `find_spec()`, but `system_utils._pkg_root()` ignores that location and hardcodes `$SIM_REPO_ROOT/source/geniesim_benchmark/src/geniesim_benchmark`. Runtime resource/output lookup is therefore checkout-layout dependent and conflicts with claimed wheel support.
+- `check_and_fix_env()` creates a missing `SIM_REPO_ROOT` directory instead of rejecting a bad path, which can hide misconfiguration before later resource lookups fail.
+- Task YAMLs are thin overlays: for example `g2op_if_pick_block_color.yaml` selects eval task `table_task_1_g2_op`, subtask `pick_block_color`, corobot policy, seed, and episode count; robot/scene/scoring details live in the referenced eval-task JSON and per-instance LLM task assets.
+- The current untracked gallery script is a standalone batch command and is not wired into `geniesim benchmark`, README, or USAGE. It discovers YAMLs, launches one headless preview subprocess per config, detects newly written `debug_preview/preview_*.png`, archives images per config, and emits JSON/CSV indexes.
+- `build_preview_command()` passes `--benchmark.output_dir=<task>/eval`, but `TaskBenchmark` constructs `EvaluationSummary` from `system_utils.benchmark_output_path()` and never reads `args.output_dir`; this gallery argument does not redirect evaluation output.
+- `build_child_env()` uses `setdefault()` for `GENIESIM_REPO_ROOT` and `SIM_REPO_ROOT`. If the parent already exports either to a different checkout, an explicit gallery `--repo-root` does not win; the child writes previews elsewhere and the parent reports failure because it watches the requested root.
+- Gallery success requires only `proc.returncode == 0 and images` (any image). A run producing just one of the three expected cameras is marked `ok`, and `_task_done()` validates only the paths present, so `--resume` can permanently accept an incomplete gallery entry.
+- Gallery subprocesses have no timeout; a stuck Isaac Sim child stalls the entire sequential batch. Tests cover filtering, metadata, command construction, image moving, env sanitization, and fallback root discovery, but not incomplete cameras, inherited conflicting roots, timeout, resume/index semantics, or a real preview integration.
+- ADER is the declarative scoring engine: `problems.json` action trees are parsed into composite control nodes and simulator predicates, which update `task_progress`; `TaskEvaluation` extracts a configured checker sequence, computes per-step/E2E scores, and `EvaluationSummary` incrementally rewrites one result JSON.
+- `do_parsing()` catches every exception while loading/parsing per-instance `problems.json` and silently falls back to `default_problem.json`. Syntax errors, unknown checker types, missing fields, and implementation bugs can therefore produce a successful run scored against the wrong rule instead of failing closed.
+- `TASK_STEPS` defines `straighten_object` twice (`["VLM"]` and later `["Follow", "Upright"]`); Python silently keeps only the latter, so the first scoring contract is dead.
+- `EvaluationSummary.to_dynamic_msg_pub()` calls `get_task_steps(self.task_name, ...)` where `self.task_name` is the top-level eval config name (e.g. `table_task_1_g2_op`), while the valid mapping is keyed by `sub_task_name` (e.g. `pick_block_color`). Live dynamic progress messages therefore usually have no step fields even though final-file scoring uses the correct `self.sub_steps`.
+- The hook abstraction currently contributes no behavior: `TaskHook` start/step/end/gather methods are all `pass`; serial evaluation pays the callback plumbing cost but scoring is driven directly by env/task state.
+- The ADER parser is a long key-dispatch chain with positional pipe-delimited arguments and no upfront schema validation. Most malformed parameters become low-level index/value errors, then are swallowed by the broad fallback above.
+- Offline utilities are sizable subsystems: AgiBot-to-LeRobot conversion is ~990 lines, legacy benchmark teleop ~829 lines, inference probing ~439 lines, and statistical model comparison ~1,511 lines. The distribution is broader than its README layout suggests.
+- The dataset converter has a clean importable API plus CLI wrapper, lazily checks `h5py/numpy/pyarrow`, requires ffmpeg, writes LeRobot v2.1 parquet/video/meta structures, and supports one or many episodes. These heavy deps are documented at runtime but not modeled as a package extra.
+- LLM evaluator generation reads prompt specs plus `instructions.json`, calls an OpenAI-compatible chat endpoint, heuristically extracts the first JSON object, and writes `problems.json`. It does not schema-validate the generated ADER tree before saving; runtime parsing may later silently fall back to the default rule.
+- `auto_score.py` prints `API_KEY` verbatim (`[auto_score] API_KEY: ...`), which can leak a live credential into terminal, CI, or captured benchmark logs.
+- The legacy `geniesim_benchmark.teleop` path is broken/stale: it imports missing `geniesim_benchmark.robot.genie_robot.IsaacSimRpcRobot`, and calls module-level `summarize_scores()` / `dump_eval_result()` functions that no longer exist (only similarly named class methods remain). The repository's supported teleop is now the separate `geniesim_teleop` package.
+- `compare_models.py` implements conservative unpaired Welch tests by default, optional paired tests, BH adjustment, CSV/JSON/plot/terminal-PNG output, and content-based task matching. It is useful post-processing but has no documented `geniesim` CLI surface or package tests here.
+
+## Two-block Stacking Task Design
+- The closest reference is `g2op_spatial_stack_three_building_blocks.yaml`, which selects `task_name: table_task_2_g2_op` and `sub_task_name: stack_three_building_blocks`; `stack_bowls` uses the same top-level eval task.
+- Both existing stacking tasks are data-only additions on top of existing runtime code: a task YAML, per-instance `llm_task/<sub_task>/<id>/` bundles, robot-init/task-config mappings, and an output scoring-map entry.
+- Existing ADER `Stack` supports a list of two or more object IDs. Building blocks use tolerance `[0.03,0.03]`; no new Python checker is required for a two-block stack.
+- A new subtask name should be distinct (provisional: `stack_two_blocks`) so output paths, inference payload `task_name`, instruction lookup, robot initialization, and scoring remain isolated from the three-block benchmark.
+- `Stack` is order-agnostic and checks only that every object's XY center lies within the configured threshold of the first object for two updates; it does not check Z ordering or contact directly.
+- `Ontop(active, passive)` is available in the parser and checks active-bottom vs passive-top within 2 cm plus at least 50% projected overlap. It is the better contract when the instruction names which block must be placed on which.
+- No current packaged `llm_task` instance uses `Ontop`; using it for the new task is supported code but introduces a new exercised scoring path. Reusing `Stack` follows the existing stacking benchmark exactly.
+- `stack_three_building_blocks/0` uses three instances of existing asset `benchmark_building_blocks_074`, each described as a 5 cm red plastic cube, with per-instance object IDs referenced consistently by `scene_info.json`, `scene.usda`, `instructions.json`, and `problems.json`.
+- The common eval-task JSON is `table_task_2_g2_op.json`: G2 Omnipicker, room_3/workspace_00, three policy cameras, and a generic pick stage. This file can be reused unchanged for a two-block task.
+- A runnable reference instance contains `scene.usda`, `scene_info.json`, `instructions.json`, and `problems.json`; `graph.dot`/`graph.svg` are absent in instance 0 and are not runtime requirements.
+- `scene.usda` directly reuses `/geniesim_assets/objects/benchmark/building_blocks/benchmark_building_blocks_074/Aligned.usda`; a two-block scene needs only two Xform prims plus the table/background composition.
+- `task_config_mapping.py` has no in-package import/use found. Adding `stack_two_blocks` there is advisable for catalog/evaluation-dimension completeness but is not needed by the current benchmark execution path.
+- User clarified the ordered success condition: the red block must be on top of the black block. The evaluation root should therefore be `Ontop(red_id, black_id)`, with drop and timeout guards.
+- `geniesim_assets` is a separate checkout at `/home/user/djy/geniesim_assets`, not a directory under `genie_sim/source`; exact black/red asset IDs must be selected from that asset index rather than inferred from unrelated benchmark scene descriptions.
+- `geniesim_assets.ASSETS_INDEX` is generated from each asset's structured `object_parameters.json`, `item.py`, and `description.py`, and includes the payload URL; it is the authoritative interface for deterministic color/shape selection.
+- Exact structured filtering finds seven red cube building-block assets at 2/3/4/5 cm (`071`-`073`, `091`-`094`), including 5 cm `benchmark_building_blocks_094`. It finds no building-block whose metadata is both `color: black` and `shape: cube`.
+- Black rectangular assets do exist (storage boxes, remote controls, etc.), but their geometry/scale is unsuitable for a two-cube stacking benchmark. If no hidden dark cube candidate exists, the scene should reuse a standard cube geometry and override one instance with a black material.
+- A direct scan of every building-block `description.py` confirms there is no black/gray cube hidden by the structured filter. The only dark cube candidates are explicitly dark blue (`087`-`090`); `025` is gray but spherical. A true black visual therefore requires a scene/material override or a new asset, and the user's "use existing asset" constraint favors the override.
+- Red cube `Aligned.usda` is an ASCII wrapper that payloads binary `Aligned.usd`; the wrapper exposes `/World/entity/body/visual` and a `MaterialBindingAPI`, but the actual visual/material definition is inside the payload. Existing generated `scene.usda` files do not provide a clear object-level material-override example, so feasibility must be verified through the benchmark's USD/material utilities or `usdcat` rather than guessed from text.
+- The runtime already supports per-object `OmniPBR` creation in `APICore._add_usd_object`: any non-`general`, non-cached material name creates a material using `object_color`, then binds it to each geometry prim.
+- `BaseEnv.add_object` currently passes `object_color=[1,1,1]` unconditionally, although it reads `object_info["material"]`. Therefore task data alone cannot request a true black override today. Reusing cube geometry without a new asset requires a small generic loader change to read an optional object color (e.g. `object_info.get("color", [1,1,1])`) and pass it through.
+- The existing generalization material-switching path is limited to doors/tables and chooses among already-bound materials; it is not the right mechanism for a deterministic black task object.
+- `BaseEnv.generate_layout` also overwrites every generated object's `material` with `"general"` before loading it. A loader-based color feature would therefore require at least two coordinated runtime changes, making it less attractive for a single benchmark task.
+- LLM-task `scene.usda` is resolved as a per-instance `sub_usd` and loaded directly before environment creation. The lowest-blast-radius path is therefore to author a black material override inside the new instance's `scene.usda`, while continuing to reuse an existing cube payload and leaving runtime code unchanged, subject to verifying the composed prim/material path.
+- The load chain is confirmed: `TaskBenchmark.create_env` passes the instance `scene.usda` to `APICore.init_robot_cfg`, which references it at `/Workspace`; for the cube payload, the composed visual mesh path is `<block_prim>/entity/body/visual` inside the task scene's default prim.
+- Recommended asset strategy: use the existing 5 cm red cube geometry (`benchmark_building_blocks_094`, or the already-exercised equivalent `074`) for both instances; leave the red instance untouched and author a task-local black `UsdPreviewSurface` binding on the black instance's `entity/body/visual`. This preserves identical mass/geometry and requires no asset or runtime-code modification.
+- User accepted the scene-local black material override and selected the existing G2 Omnipicker platform. The design can reuse `table_task_2_g2_op.json` and its `G2_omnipicker.json` robot setup unchanged.
+- Final proposed subtask identifier is `stack_red_block_on_black_block`, with entry YAML `g2op_spatial_stack_red_block_on_black_block.yaml`; this encodes the ordered semantic explicitly and avoids collision with `stack_three_building_blocks`.
+- `action_parsing.py` passes `Ontop` parameters directly as `(active, passive)`, so `problems.json` must use `"Ontop": "<red_id>|<black_id>"`. `TASK_STEPS` must register this subtask as `["Ontop"]`.
+- `robot_init_states.py` must add the new subtask with `"G2_omnipicker": G2_DEFAULT_STATES`; without this mapping, environment initialization does not populate required robot state fields.
+- Concrete design scope: add one entry YAML plus one four-file instance bundle; modify `robot_init_states.py`, `eval_utils.py`, and (for catalog completeness) `task_config_mapping.py`; reuse `table_task_2_g2_op.json`, the existing `Ontop` implementation/parser, and `benchmark_building_blocks_074`.
+- `scene_info.json` is not read by the normal subtask runtime, but it is part of every reference bundle and is consumed by offline instruction-generation tooling. Keep it synchronized with the scene, including manually describing the overridden instance as black.
+- The task should start with `red_block_000` and `black_block_000` separated on the tabletop at cube-center Z ~= 0.885 m. Both can payload the already-exercised 5 cm `benchmark_building_blocks_074`; only the black instance receives the local material binding.
+- Validation must include direction-sensitive negative controls: red beside black fails, black on red fails, and red on black passes. A visual preview must also confirm that the override is truly black after the task scene is referenced under `/Workspace`.
+- The reference `scene_info.json` relation schema is a directed node/link graph. Instance 0 should keep a synchronized minimal graph containing root, table scene, two-block group, table, red block, and black block; no stale third-block nodes or links.
+- `benchmark_building_blocks_074` metadata confirms a 5 cm red plastic cube and 0.01 kg mass. Reusing it for both prims preserves identical geometry and physics; only black visual metadata differs due to the task-local material override.
+- Pre-change benchmark test baseline: `PYTHONPATH=src pytest tests -q` completed with 6 passed.
+- The host lacks the `geniesim` executable and common standalone Isaac/USD tools, but a running `geniesim3` container based on `registry.agibot.com/genie-sim/geniesim3:latest` is available. The host also has `geniesim` and `isaac` Conda environments, so simulator/USD validation may still be possible without installing anything.
+- The host `geniesim` Conda environment successfully imports `pxr`. `Sdf.Layer.FindOrOpen` parses the new scene, sees default prim `World`, both payload specs, the black material, the exact binding target, the shader surface connection, and diffuse color `(0.01, 0.01, 0.01)`.
+- The running `geniesim3` container bind-mounts the current checkout at `/workspace` and assets at `/geniesim_assets`, making it the best candidate for full payload composition and preview. Its login shell does not currently expose a `geniesim` command, so the container entry/setup paths need inspection.
+- The container CLI is `/isaac-sim/kit/python/bin/geniesim`, and `benchmark list` discovers the new config under `[g2op/spatial]`.
+- Adding `/isaac-sim/kit/python/lib/python3.11/site-packages/numpy.libs` to the validation process `LD_LIBRARY_PATH` fixes the image's missing bundled `libgfortran` lookup.
+- Full Kit/OpenUSD composition succeeded with real `/geniesim_assets` payloads: red/black object prims and both visual meshes are valid under `/Workspace`; the black mesh computes its bound material as `/Workspace/Objects/black_block_000/Looks/BlackMaterial`; diffuse color resolves to approximately `(0.01, 0.01, 0.01)`.
+- The full G2 Omnipicker preview for instance 0 exited with code 0, loaded all four ADER leaves, and saved three policy-camera images. Visual inspection confirms exactly two separated, reachable cubes with the required red and black appearance.
+- The preview's no-action result is `Ontop = 0`, confirming the initial scene does not accidentally satisfy the goal. A controlled test of the actual `Ontop.update()` implementation also confirms reversed stacking and less-than-50% overlap fail while valid red-on-black placement passes.
+# OpenAI Natural-Language Scene Generation
+- The text embedding stack works with OpenAI `text-embedding-3-small`; the 1,239-asset index is available through the MCP gateway at port 8765.
+- Open WebUI runs on port 3000 because host port 8080 is occupied by another service.
+- `gpt-5.6-sol` tool calls through Chat Completions require `reasoning_effort: none`; this is now part of the exported `geniesimscenegen` model configuration.
+- The Open WebUI save action writes `/geniesim/generator/LLM_RESULT.py`; Compose maps that path to the host generator package directory.
+- A Chinese tabletop prompt triggered semantic and exact-ID asset searches, selected a table, beverage bottle, and bowl, and compiled a valid 39-prim USD scene at `benchmark/config/llm_task/openai_nl_smoke/0`.
+- The API key remains in the untracked `openai_key.yaml` and was not added to committed generator configuration.
+
+## Open WebUI Save Action Permanent Fix
+- The live failing chat (`acfa213c-d15a-4035-b5f9-c4d5277ecf98`) has empty assistant `content`; its generated Python is stored in `originalContent` and Responses-style `output` items as `output_text`.
+- The model emits valid raw GenieSim Python rather than fenced Markdown. The old action therefore failed both at message lookup and at formatting detection.
+- Save action 0.2.0 normalizes legacy strings, structured text arrays, `originalContent`, and Responses `output_text`. Raw text is accepted only after AST validation confirms `from helper import *` and a registered top-level `root_scene`, while fenced-code compatibility remains.
+- Reverse scanning skips user/non-assistant messages but stops at substantive newer assistant prose, preventing accidental saving of stale code from an older reply.
+- `scripts/sync_save_action_export.py` now synchronizes action content and manifest metadata into the importable Open WebUI JSON; documentation and package maintenance guidance describe this workflow.
+- Eight targeted tests pass, including a full action save into a temporary directory and exact source/export parity. Compilation and `git diff --check` pass.
+- The broader generator suite cannot collect under default Python because its existing OpenUSD tests require `pxr`; this does not affect the scoped action validation.
+- The live Open WebUI database action was transactionally updated and the container restarted. Health is true, live/export SHA-256 is `c3f8ac226fffcea616ab82b1d4819c86c9a0d6715944f79a47b19c0c41e52e9b`, and the real failing chat now yields a 2,437-character Python block containing `root_scene`.
+- A consistent pre-update SQLite backup is retained at `/tmp/openwebui-save-action-before-0.2.0-1784635949.db`.
+
+## Generic LLM-task Scenario Augmentation
+- The existing `generate_stack_red_black_scenarios.py` reconstructs one hard-coded task bundle rather than augmenting an input bundle, so it cannot preserve arbitrary instructions, scoring rules, assets, relations, or object sets.
+- Its `background_usd` and `light_config` values are not authored into `_scene_usda()`, but they are not metadata-only: `scenario_config.py` replaces the background task config and calls `env.set_light_config()`, and `BaseEnv` later invokes `APICore._apply_light_config()` over all composed light prims. A generic generator should reuse this runtime path rather than add a duplicate light prim.
+- A generic implementation should copy the complete source instance, preserve its task semantics, retain the source USD as a local base layer, and author a stronger override `scene.usda`. This minimizes assumptions about arbitrary source scenes while keeping generated bundles portable.
+- `scene_info.json.layout` provides stable object IDs, semantic/category hints, poses, and dimensions for automatic movable-object/table discovery; explicit config overrides are still needed for atypical tasks.
+- Existing red/black tests are extensive and the script/task/test directories are currently untracked user work. The safest compatibility design is to keep the legacy no-argument API/matrix while adding a separate generic engine that the same script exposes through `--task`/`--profile` options.
+- The generic output should use `scene_source.usda` plus a stronger `scene.usda` sublayer override. Keeping any pre-existing `scene_base.usda` untouched also makes repeated augmentation safe instead of creating a self-referencing sublayer.
+- Default output must be a sibling `<task>_augmented` directory. In-place replacement needs explicit `--replace-generated` and source staging so clearing numeric outputs cannot delete the only source scene before it is copied.
+- Real runtime tracing corrected the initial lighting assumption: benchmark loading consumes `scenario.json.light_config`, stores it on `BaseEnv`, and applies temperature/intensity to all composed light prims through `APICore`; authoring another SphereLight would double the lighting and is intentionally avoided.
+- A real red/black smoke generation produced six portable override bundles. Host OpenUSD parsed and composed all six with payload loading disabled, found both task objects, and verified the stronger table material binding.
+- A real no-table task (`sorting_packages_continuous/0`) generated four scenarios successfully; unavailable table-only dimensions were skipped while baseline, pose, lighting, and combined variants remained usable.
+- Final scoped benchmark verification is 33 passing tests. Full unfiltered collection is still blocked only by the unrelated user-owned `test_preview_task_gallery.py` importing a missing `geniesim_benchmark.scripts.preview_task_gallery` module.
+- OpenUSD validation confirms six generated layers use the portable `./scene_source.usda` sublayer and resolves the table binding to `/World/Augmentation/Looks/TableAugmentationMaterial` with `strongerThanDescendants`.
+- The old entry point still contains roughly 500 lines of red/black constants, dataclasses, matrix construction, scene reconstruction, and legacy output logic before dispatching to the generic engine. A true task-neutral tool should replace it with a thin required-`--task` CLI and delete that compatibility surface.
+- Current references to the old name exist in the package README, augmentation guide, red/black task README, historical design/plan docs, and legacy tests. Active user-facing docs must change; historical dated design documents should remain historical unless they are executable instructions.
+- The renamed entry point is intentionally a thin CLI over `scenario_augmentation.py`: `--task` is required, the default seed/count remain generic, and no red/black constants, object IDs, assets, or legacy matrix APIs remain in either active script.
+- Active READMEs and commands now reference only `generate_task_scenarios.py`. Dated historical design/plan documents still describe the removed legacy implementation as historical records; no executable source or active documentation references the old entry point.
+- Final real smokes generated four no-table variants from `sorting_packages_continuous/0` and six table variants from `stack_three_building_blocks/0`. All 10 stages composed with OpenUSD; the table appearance variant resolved the stronger material binding.

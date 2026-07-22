@@ -1,0 +1,13 @@
+{
+  "dimension": "baseline",
+  "instance_id": 30,
+  "light_config": {},
+  "parameters": {
+    "object_poses": {},
+    "table_appearance": {},
+    "table_height_offset": 0.0
+  },
+  "scenario_seed": 20260750,
+  "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+  "split": "augmented"
+}

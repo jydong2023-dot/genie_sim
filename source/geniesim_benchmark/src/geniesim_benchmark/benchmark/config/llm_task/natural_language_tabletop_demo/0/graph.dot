@@ -1,0 +1,13 @@
+strict digraph "" {
+	graph [rankdir=LR];
+	root_scene_32cf3197 -> simple_tabletop_bottle_and_bowl_e415d5bd;
+	simple_tabletop_bottle_and_bowl_e415d5bd -> tabletop_table_3ac6d289;
+	simple_tabletop_bottle_and_bowl_e415d5bd -> tabletop_left_bottle_fe637678;
+	simple_tabletop_bottle_and_bowl_e415d5bd -> tabletop_right_bowl_b1fbbdd8;
+	table_4864d9e4	[tags="['center_white_table', 'table', 'white', 'rectangular', 'support_surface', 'center']"];
+	tabletop_table_3ac6d289 -> table_4864d9e4;
+	benchmark_beverage_bottle_aa2c91f5	[tags="['left_transparent_beverage_bottle', 'beverage_bottle', 'transparent', 'plastic', 'drink_container', 'left']"];
+	tabletop_left_bottle_fe637678 -> benchmark_beverage_bottle_aa2c91f5;
+	benchmark_bowl_fc969d7c	[tags="['right_white_bowl', 'bowl', 'white', 'round', 'tableware', 'right']"];
+	tabletop_right_bowl_b1fbbdd8 -> benchmark_bowl_fc969d7c;
+}

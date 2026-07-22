@@ -1,0 +1,24 @@
+{
+  "background_usd": "background/room/room_3/background.usda",
+  "dimension": "lighting",
+  "instance_id": 18,
+  "light_config": {
+    "intensity": 500,
+    "temperature": 3000
+  },
+  "parameters": {
+    "black_pose": {
+      "x": -0.04,
+      "y": 0.16,
+      "yaw_deg": 6.875
+    },
+    "red_pose": {
+      "x": -0.16,
+      "y": -0.14,
+      "yaw_deg": -9.166
+    },
+    "table_height_offset": 0.0
+  },
+  "scenario_seed": 20260738,
+  "split": "standard"
+}

@@ -1,0 +1,901 @@
+{
+  "generator_version": 1,
+  "root_seed": 20260720,
+  "scenario_count": 40,
+  "scenarios": [
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "baseline",
+      "instance_id": 0,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260720,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 1,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.105395,
+          "y": 0.097439,
+          "yaw_deg": 5.603989
+        },
+        "red_pose": {
+          "x": -0.153799,
+          "y": 0.20996,
+          "yaw_deg": -11.711384
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260721,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 2,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.169753,
+          "y": -0.153074,
+          "yaw_deg": -10.059328
+        },
+        "red_pose": {
+          "x": -0.173016,
+          "y": -0.011499,
+          "yaw_deg": -17.387176
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260722,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 3,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.112784,
+          "y": -0.051507,
+          "yaw_deg": 28.164482
+        },
+        "red_pose": {
+          "x": -0.19861,
+          "y": 0.074815,
+          "yaw_deg": -14.719545
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260723,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 4,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.062251,
+          "y": 0.20421,
+          "yaw_deg": 15.172278
+        },
+        "red_pose": {
+          "x": 0.111997,
+          "y": -0.198958,
+          "yaw_deg": 1.376786
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260724,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 5,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": 0.085932,
+          "y": -0.059176,
+          "yaw_deg": 25.008845
+        },
+        "red_pose": {
+          "x": -0.043653,
+          "y": -0.12215,
+          "yaw_deg": -0.071627
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260725,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 6,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.149141,
+          "y": -0.173503,
+          "yaw_deg": 6.887675
+        },
+        "red_pose": {
+          "x": 0.013129,
+          "y": -0.058344,
+          "yaw_deg": -21.216974
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260726,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 7,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.032714,
+          "y": -0.087069,
+          "yaw_deg": 10.754001
+        },
+        "red_pose": {
+          "x": 0.044474,
+          "y": 0.10524,
+          "yaw_deg": -8.213485
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260727,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 8,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": 0.093525,
+          "y": -0.144701,
+          "yaw_deg": -21.647873
+        },
+        "red_pose": {
+          "x": 0.11361,
+          "y": 0.046916,
+          "yaw_deg": 22.170584
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260728,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 9,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.160478,
+          "y": 0.15654,
+          "yaw_deg": 4.338205
+        },
+        "red_pose": {
+          "x": -0.002439,
+          "y": -0.049482,
+          "yaw_deg": -25.898708
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260729,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 10,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.075529,
+          "y": 0.1362,
+          "yaw_deg": -7.477338
+        },
+        "red_pose": {
+          "x": 0.11618,
+          "y": 0.077494,
+          "yaw_deg": -10.697362
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260730,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "object_pose",
+      "instance_id": 11,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.046869,
+          "y": 0.103914,
+          "yaw_deg": -11.529632
+        },
+        "red_pose": {
+          "x": -0.16346,
+          "y": -0.192538,
+          "yaw_deg": 2.054934
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260731,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_2/background.usda",
+      "dimension": "background",
+      "instance_id": 12,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260732,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/home/home_b_aligned/background.usda",
+      "dimension": "background",
+      "instance_id": 13,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260733,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/laboratory/laboratory_2/background.usda",
+      "dimension": "background",
+      "instance_id": 14,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260734,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/study_room/study_4/background.usda",
+      "dimension": "background",
+      "instance_id": 15,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260735,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/kitchen/kitchen_1/background.usda",
+      "dimension": "background",
+      "instance_id": 16,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260736,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/warehouse/warehouse_1/background.usda",
+      "dimension": "background",
+      "instance_id": 17,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260737,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "lighting",
+      "instance_id": 18,
+      "light_config": {
+        "intensity": 500,
+        "temperature": 3000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260738,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "lighting",
+      "instance_id": 19,
+      "light_config": {
+        "intensity": 3000,
+        "temperature": 3000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260739,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "lighting",
+      "instance_id": 20,
+      "light_config": {
+        "intensity": 1000,
+        "temperature": 5000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260740,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "lighting",
+      "instance_id": 21,
+      "light_config": {
+        "intensity": 6000,
+        "temperature": 5000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260741,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "lighting",
+      "instance_id": 22,
+      "light_config": {
+        "intensity": 500,
+        "temperature": 7000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260742,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "lighting",
+      "instance_id": 23,
+      "light_config": {
+        "intensity": 3000,
+        "temperature": 7000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260743,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "lighting",
+      "instance_id": 24,
+      "light_config": {
+        "intensity": 1000,
+        "temperature": 9000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260744,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "lighting",
+      "instance_id": 25,
+      "light_config": {
+        "intensity": 6000,
+        "temperature": 9000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.0
+      },
+      "scenario_seed": 20260745,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "table_height",
+      "instance_id": 26,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": -0.05
+      },
+      "scenario_seed": 20260746,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "table_height",
+      "instance_id": 27,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": -0.025
+      },
+      "scenario_seed": 20260747,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "table_height",
+      "instance_id": 28,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.025
+      },
+      "scenario_seed": 20260748,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/room/room_3/background.usda",
+      "dimension": "table_height",
+      "instance_id": 29,
+      "light_config": {},
+      "parameters": {
+        "black_pose": {
+          "x": -0.04,
+          "y": 0.16,
+          "yaw_deg": 6.875
+        },
+        "red_pose": {
+          "x": -0.16,
+          "y": -0.14,
+          "yaw_deg": -9.166
+        },
+        "table_height_offset": 0.05
+      },
+      "scenario_seed": 20260749,
+      "split": "standard"
+    },
+    {
+      "background_usd": "background/kitchen/kitchen_1/background.usda",
+      "dimension": "combined",
+      "instance_id": 30,
+      "light_config": {
+        "intensity": 1000,
+        "temperature": 5000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": 0.026517,
+          "y": -0.132329,
+          "yaw_deg": 27.592261
+        },
+        "red_pose": {
+          "x": -0.130562,
+          "y": 0.040304,
+          "yaw_deg": 15.6197
+        },
+        "table_height_offset": -0.025
+      },
+      "scenario_seed": 20260750,
+      "split": "stress"
+    },
+    {
+      "background_usd": "background/kitchen/kitchen_1/background.usda",
+      "dimension": "combined",
+      "instance_id": 31,
+      "light_config": {
+        "intensity": 1000,
+        "temperature": 9000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": 0.078893,
+          "y": 0.108474,
+          "yaw_deg": 10.115403
+        },
+        "red_pose": {
+          "x": -0.092581,
+          "y": -0.048091,
+          "yaw_deg": 26.313743
+        },
+        "table_height_offset": -0.05
+      },
+      "scenario_seed": 20260751,
+      "split": "stress"
+    },
+    {
+      "background_usd": "background/warehouse/warehouse_1/background.usda",
+      "dimension": "combined",
+      "instance_id": 32,
+      "light_config": {
+        "intensity": 3000,
+        "temperature": 7000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": 0.107289,
+          "y": 0.026969,
+          "yaw_deg": -7.368401
+        },
+        "red_pose": {
+          "x": -0.125229,
+          "y": -0.140665,
+          "yaw_deg": -23.572963
+        },
+        "table_height_offset": 0.05
+      },
+      "scenario_seed": 20260752,
+      "split": "stress"
+    },
+    {
+      "background_usd": "background/home/home_b_aligned/background.usda",
+      "dimension": "combined",
+      "instance_id": 33,
+      "light_config": {
+        "intensity": 6000,
+        "temperature": 9000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.13494,
+          "y": -0.018231,
+          "yaw_deg": 20.149456
+        },
+        "red_pose": {
+          "x": 0.065611,
+          "y": 0.175554,
+          "yaw_deg": -29.509673
+        },
+        "table_height_offset": -0.025
+      },
+      "scenario_seed": 20260753,
+      "split": "stress"
+    },
+    {
+      "background_usd": "background/kitchen/kitchen_1/background.usda",
+      "dimension": "combined",
+      "instance_id": 34,
+      "light_config": {
+        "intensity": 3000,
+        "temperature": 7000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.142343,
+          "y": -0.159348,
+          "yaw_deg": -25.552603
+        },
+        "red_pose": {
+          "x": 0.10469,
+          "y": -0.001923,
+          "yaw_deg": -28.207251
+        },
+        "table_height_offset": 0.05
+      },
+      "scenario_seed": 20260754,
+      "split": "stress"
+    },
+    {
+      "background_usd": "background/study_room/study_4/background.usda",
+      "dimension": "combined",
+      "instance_id": 35,
+      "light_config": {
+        "intensity": 500,
+        "temperature": 7000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.109114,
+          "y": 0.037602,
+          "yaw_deg": -13.071364
+        },
+        "red_pose": {
+          "x": 0.110649,
+          "y": 0.203658,
+          "yaw_deg": 9.122147
+        },
+        "table_height_offset": 0.05
+      },
+      "scenario_seed": 20260755,
+      "split": "stress"
+    },
+    {
+      "background_usd": "background/kitchen/kitchen_1/background.usda",
+      "dimension": "combined",
+      "instance_id": 36,
+      "light_config": {
+        "intensity": 500,
+        "temperature": 3000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.189924,
+          "y": 0.129516,
+          "yaw_deg": -9.028994
+        },
+        "red_pose": {
+          "x": 0.110244,
+          "y": 0.204718,
+          "yaw_deg": 0.913871
+        },
+        "table_height_offset": -0.025
+      },
+      "scenario_seed": 20260756,
+      "split": "stress"
+    },
+    {
+      "background_usd": "background/warehouse/warehouse_1/background.usda",
+      "dimension": "combined",
+      "instance_id": 37,
+      "light_config": {
+        "intensity": 500,
+        "temperature": 3000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.035966,
+          "y": -0.011051,
+          "yaw_deg": 23.132342
+        },
+        "red_pose": {
+          "x": 0.081325,
+          "y": -0.074507,
+          "yaw_deg": -0.640464
+        },
+        "table_height_offset": 0.05
+      },
+      "scenario_seed": 20260757,
+      "split": "stress"
+    },
+    {
+      "background_usd": "background/home/home_b_aligned/background.usda",
+      "dimension": "combined",
+      "instance_id": 38,
+      "light_config": {
+        "intensity": 1000,
+        "temperature": 5000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.154292,
+          "y": 0.094693,
+          "yaw_deg": -26.978204
+        },
+        "red_pose": {
+          "x": 0.092358,
+          "y": 0.079572,
+          "yaw_deg": -26.278343
+        },
+        "table_height_offset": -0.05
+      },
+      "scenario_seed": 20260758,
+      "split": "stress"
+    },
+    {
+      "background_usd": "background/home/home_b_aligned/background.usda",
+      "dimension": "combined",
+      "instance_id": 39,
+      "light_config": {
+        "intensity": 6000,
+        "temperature": 5000
+      },
+      "parameters": {
+        "black_pose": {
+          "x": -0.123533,
+          "y": -0.133984,
+          "yaw_deg": 28.803626
+        },
+        "red_pose": {
+          "x": 0.031464,
+          "y": 0.182878,
+          "yaw_deg": 26.192038
+        },
+        "table_height_offset": 0.025
+      },
+      "scenario_seed": 20260759,
+      "split": "stress"
+    }
+  ]
+}

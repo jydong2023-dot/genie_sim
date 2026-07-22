@@ -1,0 +1,29 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Ontop": "red_block_000|black_block_000"
+              },
+              {
+                "Onfloor": "red_block_000|0"
+              },
+              {
+                "Onfloor": "black_block_000|0"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "stack_red_block_on_black_block"
+  }
+}

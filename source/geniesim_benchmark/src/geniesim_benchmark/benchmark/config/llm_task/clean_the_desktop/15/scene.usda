@@ -1,0 +1,58 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    subLayers = [@./scene_source.usda@]
+    upAxis = "Z"
+)
+
+over "World"
+{
+    over "Objects"
+    {
+        over "benchmark_laptop_a1772faf"
+        {
+            double3 xformOp:translate = (-0.142249, 0.238591, 0.768)
+            quatf xformOp:orient = (0.994782, 0, 0, -0.102023)
+        }
+        over "benchmark_mouse_c041b98a"
+        {
+            double3 xformOp:translate = (-0.081744, 0.110726, 0.774)
+            quatf xformOp:orient = (0.998804, 0, 0, 0.048885)
+        }
+        over "benchmark_trash_can_64e794f1"
+        {
+            double3 xformOp:translate = (-0.16627, -0.013066, 0.835)
+            quatf xformOp:orient = (0.988511, 0, 0, -0.15115)
+        }
+        over "iros_crumpled_paper_252d877c"
+        {
+            double3 xformOp:translate = (-0.162191, -0.173948, 0.791)
+            quatf xformOp:orient = (0.996149, 0, 0, -0.087671)
+        }
+        over "iros_pen_cup_9c134ab7"
+        {
+            double3 xformOp:translate = (-0.198262, 0.085017, 0.805)
+            quatf xformOp:orient = (0.991761, 0, 0, -0.128099)
+        }
+        over "sft_pen_5cbbccaf"
+        {
+            double3 xformOp:translate = (-0.09098, -0.05853, 0.849)
+            quatf xformOp:orient = (0.969947, 0, 0, 0.243314)
+        }
+        over "sft_pen_5e3769e7"
+        {
+            double3 xformOp:translate = (0.189996, -0.226089, 0.831)
+            quatf xformOp:orient = (0.999928, 0, 0, 0.012014)
+        }
+        over "sft_pen_9aadc870"
+        {
+            double3 xformOp:translate = (-0.027814, 0.232056, 0.862)
+            quatf xformOp:orient = (0.991248, 0, 0, 0.132017)
+        }
+    }
+
+    def Scope "Augmentation"
+    {
+    }
+}

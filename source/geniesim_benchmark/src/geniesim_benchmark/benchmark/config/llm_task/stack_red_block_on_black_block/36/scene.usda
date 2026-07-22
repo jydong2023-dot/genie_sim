@@ -1,0 +1,76 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_614a6115" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.24)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "red_block_000" (
+            prepend payload = @/geniesim_assets/objects/benchmark/building_blocks/benchmark_building_blocks_074/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999968, 0, 0, 0.007975)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.110244, 0.204718, 0.86)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "black_block_000" (
+            prepend payload = @/geniesim_assets/objects/benchmark/building_blocks/benchmark_building_blocks_074/Aligned.usda@
+        )
+        {
+            def Scope "Looks"
+            {
+                def Material "BlackMaterial"
+                {
+                    token outputs:surface.connect = </World/Objects/black_block_000/Looks/BlackMaterial/BlackShader.outputs:surface>
+
+                    def Shader "BlackShader"
+                    {
+                        uniform token info:id = "UsdPreviewSurface"
+                        color3f inputs:diffuseColor = (0.01, 0.01, 0.01)
+                        float inputs:metallic = 0
+                        float inputs:roughness = 0.45
+                        token outputs:surface
+                    }
+                }
+            }
+
+            over "entity"
+            {
+                over "body"
+                {
+                    over "visual" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        rel material:binding = </World/Objects/black_block_000/Looks/BlackMaterial>
+                    }
+                }
+            }
+
+            quatf xformOp:orient = (0.996897, 0, 0, -0.078711)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.189924, 0.129516, 0.86)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

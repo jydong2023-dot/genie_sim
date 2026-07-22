@@ -1,0 +1,118 @@
+{
+  "dimension": "object_pose",
+  "instance_id": 19,
+  "light_config": {},
+  "parameters": {
+    "object_poses": {
+      "benchmark_laptop_a1772faf": {
+        "xyz": [
+          -0.142249,
+          0.238591,
+          0.768
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          -0.102023,
+          0.994782
+        ]
+      },
+      "benchmark_mouse_c041b98a": {
+        "xyz": [
+          -0.081744,
+          0.110726,
+          0.774
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          0.048885,
+          0.998804
+        ]
+      },
+      "benchmark_trash_can_64e794f1": {
+        "xyz": [
+          -0.16627,
+          -0.013066,
+          0.835
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          -0.15115,
+          0.988511
+        ]
+      },
+      "iros_crumpled_paper_252d877c": {
+        "xyz": [
+          -0.162191,
+          -0.173948,
+          0.791
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          -0.087671,
+          0.996149
+        ]
+      },
+      "iros_pen_cup_9c134ab7": {
+        "xyz": [
+          -0.198262,
+          0.085017,
+          0.805
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          -0.128099,
+          0.991761
+        ]
+      },
+      "sft_pen_5cbbccaf": {
+        "xyz": [
+          -0.09098,
+          -0.05853,
+          0.849
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          0.243314,
+          0.969947
+        ]
+      },
+      "sft_pen_5e3769e7": {
+        "xyz": [
+          0.189996,
+          -0.226089,
+          0.831
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          0.012014,
+          0.999928
+        ]
+      },
+      "sft_pen_9aadc870": {
+        "xyz": [
+          -0.027814,
+          0.232056,
+          0.862
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          0.132017,
+          0.991248
+        ]
+      }
+    },
+    "table_appearance": {},
+    "table_height_offset": 0.0
+  },
+  "scenario_seed": 20260739,
+  "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/clean_the_desktop/0",
+  "split": "augmented"
+}

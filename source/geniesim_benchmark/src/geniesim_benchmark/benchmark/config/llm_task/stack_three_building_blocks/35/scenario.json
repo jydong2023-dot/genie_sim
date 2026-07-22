@@ -1,0 +1,65 @@
+{
+  "dimension": "combined",
+  "instance_id": 35,
+  "light_config": {
+    "intensity": 6000.0,
+    "temperature": 5000.0
+  },
+  "parameters": {
+    "object_poses": {
+      "benchmark_building_blocks_0717465e": {
+        "xyz": [
+          -0.050837,
+          0.028803,
+          0.935
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          -0.189342,
+          0.981911
+        ]
+      },
+      "benchmark_building_blocks_47d4eb46": {
+        "xyz": [
+          0.136193,
+          -0.074025,
+          0.935
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          0.131629,
+          0.991299
+        ]
+      },
+      "benchmark_building_blocks_67be70a6": {
+        "xyz": [
+          -0.193584,
+          0.07202,
+          0.935
+        ],
+        "xyzw": [
+          0.0,
+          0.0,
+          -0.198334,
+          0.980135
+        ]
+      }
+    },
+    "table_appearance": {
+      "color": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "color_name": "black",
+      "metallic": 0.0,
+      "roughness": 0.5
+    },
+    "table_height_offset": 0.05
+  },
+  "scenario_seed": 20260755,
+  "source_scene": "/workspace/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/stack_three_building_blocks/0",
+  "split": "augmented"
+}

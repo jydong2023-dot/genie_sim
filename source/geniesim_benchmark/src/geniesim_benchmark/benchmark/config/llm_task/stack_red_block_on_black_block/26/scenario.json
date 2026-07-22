@@ -1,0 +1,21 @@
+{
+  "background_usd": "background/room/room_3/background.usda",
+  "dimension": "table_height",
+  "instance_id": 26,
+  "light_config": {},
+  "parameters": {
+    "black_pose": {
+      "x": -0.04,
+      "y": 0.16,
+      "yaw_deg": 6.875
+    },
+    "red_pose": {
+      "x": -0.16,
+      "y": -0.14,
+      "yaw_deg": -9.166
+    },
+    "table_height_offset": -0.05
+  },
+  "scenario_seed": 20260746,
+  "split": "standard"
+}
