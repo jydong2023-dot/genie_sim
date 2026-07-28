@@ -1702,10 +1702,13 @@ class APICore:
             rep.modify.semantics([("class", "robot")])
 
         viewport, window = get_active_viewport_and_window()
-        # Set camera based on robot type
-        viewport.set_active_camera("/G1/head_link2/Head_Camera")
+        active_camera = next(iter(self.robot_cfg.cameras), "/World/Camera")
+        # Preserve legacy defaults for existing robot configs.
+        if "G1" in self.robot_name:
+            active_camera = "/G1/head_link2/Head_Camera"
         if "G2" in self.robot_name:
-            viewport.set_active_camera("/genie/head_link3/head_front_Camera")
+            active_camera = "/genie/head_link3/head_front_Camera"
+        viewport.set_active_camera(active_camera)
         time.sleep(1)
         self._play()
         time.sleep(1)

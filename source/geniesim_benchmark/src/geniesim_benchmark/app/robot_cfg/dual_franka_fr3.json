@@ -1,0 +1,75 @@
+{
+  "camera": {
+    "/dual_franka_fr3/head_front_Camera": [
+      640,
+      400,
+      30
+    ]
+  },
+  "closed_positions": {
+    "left": [
+      0.0
+    ],
+    "right": [
+      0.0
+    ]
+  },
+  "gripper": {
+    "closed_velocities": {
+      "left": [
+        -0.04
+      ],
+      "right": [
+        -0.04
+      ]
+    },
+    "end_effector_name": {
+      "left": "left_fr3_hand_tcp",
+      "right": "right_fr3_hand_tcp"
+    },
+    "end_effector_prim_path": {
+      "left": "/dual_franka_fr3/left_fr3/fr3_hand_tcp",
+      "right": "/dual_franka_fr3/right_fr3/fr3_hand_tcp"
+    },
+    "finger_names": {
+      "left": [
+        "left_fr3_finger_joint1",
+        "left_fr3_finger_joint2"
+      ],
+      "right": [
+        "right_fr3_finger_joint1",
+        "right_fr3_finger_joint2"
+      ]
+    },
+    "gripper_control_joint": {
+      "left": "/dual_franka_fr3/left_fr3/fr3_hand/left_fr3_finger_joint1",
+      "right": "/dual_franka_fr3/right_fr3/fr3_hand/right_fr3_finger_joint1"
+    },
+    "gripper_name": {
+      "left": "franka_hand",
+      "right": "franka_hand"
+    },
+    "gripper_type": "linear",
+    "max_force": -1,
+    "opened_positions": {
+      "left": [
+        0.04
+      ],
+      "right": [
+        0.04
+      ]
+    }
+  },
+  "robot": {
+    "arm": "dual",
+    "base_prim_path": "/dual_franka_fr3",
+    "dof_nums": 18,
+    "initial_position": [],
+    "joint_delta_time": 0.01,
+    "lock_joints": [],
+    "robot_generation": "dual_franka",
+    "robot_name": "dual_franka_fr3",
+    "robot_usd": "robot/DualFrankaFR3/robot.usd",
+    "urdf_name": ""
+  }
+}

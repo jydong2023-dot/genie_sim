@@ -209,7 +209,13 @@ class RobotInterface:
         if not self._articulation:
             logger.error("register_robot_tf failed before articulation is intialized")
             return
-        self._base_link_prim = stage.GetPrimAtPath(f"/{robot_ns}/base_link")
+        base_link_prim = stage.GetPrimAtPath(f"/{robot_ns}/base_link")
+        if not base_link_prim.IsValid():
+            base_link_prim = stage.GetPrimAtPath(f"/{robot_ns}")
+        if not base_link_prim.IsValid():
+            logger.warning(f"register_robot_tf skipped invalid robot root: /{robot_ns}")
+            return
+        self._base_link_prim = base_link_prim
         self.all_joints = []
         for prim in stage.Traverse():
             if prim.IsA(UsdPhysics.Joint):
@@ -218,7 +224,7 @@ class RobotInterface:
         self._static_tf_tree = []
         self._dynamic_tf_tree = []
         self.articulat_objects = {}
-        self.build_tf_tree(stage, stage.GetPrimAtPath(f"/{robot_ns}/base_link"), None, None)
+        self.build_tf_tree(stage, base_link_prim, None, None)
 
         def _build_tf_list(tf_tree):
             tfs = []
@@ -294,6 +300,8 @@ class RobotInterface:
         return
 
     def build_tf_tree(self, stage, prim, parent, joint_name):
+        if not prim or not prim.IsValid():
+            return
         prim_name = prim.GetName().split("/")[-1]
         if joint_name in MAP_DYNAMIC_TF_NAMES or "base_link" in prim_name:
             self._dynamic_tf_tree.append((prim, parent))

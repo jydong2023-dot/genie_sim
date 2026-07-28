@@ -20,12 +20,17 @@ class RobotCfg(Robot):
             robot_cfg = json.load(f)
         # init robot
         super(RobotCfg, self).__init__(robot_cfg["robot"]["robot_name"])
-        if "G1" in self.robot_name:
+        explicit_generation = robot_cfg["robot"].get("robot_generation")
+        if explicit_generation:
+            self.robot_generation = explicit_generation
+        elif "G1" in self.robot_name:
             self.robot_generation = "G1"
         elif "G2" in self.robot_name:
             self.robot_generation = "G2"
         else:
-            raise ValueError("robot name error")
+            raise ValueError(
+                f"robot name error: {self.robot_name} is not G1/G2 and robot_generation is missing"
+            )
         self.cam_prim_path = robot_cfg["camera"].keys()
         self.robot_prim_path = robot_cfg["robot"]["base_prim_path"]
         self.urdf_name = robot_cfg["robot"]["urdf_name"]

@@ -45,6 +45,28 @@ G2_DEFAULT_STATES = {
     "init_hand": [0.785, 0.785],
 }
 
+DUAL_FRANKA_FR3_DEFAULT_STATES = {
+    "body_state": [],
+    "head_state": [],
+    "init_arm": [
+        0.0,
+        -0.785,
+        0.0,
+        -2.356,
+        0.0,
+        1.571,
+        0.785,
+        0.0,
+        -0.785,
+        0.0,
+        -2.356,
+        0.0,
+        1.571,
+        -0.785,
+    ],
+    "init_hand": [0.04, 0.04],
+}
+
 G2_90D_DEFAULT_STATES = {
     "body_state": [-0.8029, 1.5048, -0.3419, 0.0, 0.0],
     "head_state": [0.0, -0.001, 0.3449],
@@ -257,6 +279,7 @@ TASK_INFO_DICT = {
         "G2_90d_gp": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
         "G2_crsB_omnipicker": G2_CRSB_DEFAULT_STATES,
+        "dual_franka_fr3": DUAL_FRANKA_FR3_DEFAULT_STATES,
     },
     "pick_block_shape": {
         "G1_omnipicker": G1_DEFAULT_STATES,
