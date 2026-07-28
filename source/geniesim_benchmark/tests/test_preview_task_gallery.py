@@ -191,6 +191,8 @@ def test_run_one_config_sanitizes_python_env_for_geniesim_child(monkeypatch, tmp
 
     monkeypatch.setenv("PYTHONPATH", "/isaac-sim/kit/python/lib/python3.11")
     monkeypatch.setenv("PYTHONHOME", "/isaac-sim/kit/python")
+    monkeypatch.setenv("CONDA_PREFIX", "/home/user/miniforge3")
+    monkeypatch.setenv("CONDA_DEFAULT_ENV", "base")
     monkeypatch.setenv("GENIESIM_KEEP_ME", "1")
     monkeypatch.setenv("GENIESIM_REPO_ROOT", "/stale/repo")
     monkeypatch.setenv("SIM_REPO_ROOT", "/stale/repo")
@@ -217,11 +219,18 @@ def test_run_one_config_sanitizes_python_env_for_geniesim_child(monkeypatch, tmp
     )
 
     assert metadata["status"] == "ok"
-    assert "PYTHONPATH" not in captured["env"]
+    pythonpath = captured["env"]["PYTHONPATH"].split(gallery.os.pathsep)
+    assert "/isaac-sim/kit/python/lib/python3.11" not in pythonpath
+    assert str(repo_root / "source" / "geniesim_benchmark" / "src") in pythonpath
+    assert str(repo_root.parent) in pythonpath
     assert "PYTHONHOME" not in captured["env"]
+    assert "CONDA_PREFIX" not in captured["env"]
+    assert "CONDA_DEFAULT_ENV" not in captured["env"]
     assert captured["env"]["GENIESIM_KEEP_ME"] == "1"
     assert captured["env"]["GENIESIM_REPO_ROOT"] == str(repo_root)
     assert captured["env"]["SIM_REPO_ROOT"] == str(repo_root)
+    assert captured["env"]["GENIESIM_KIT_RUNTIME_DIR"] == str(output_dir / "_kit_runtime")
+    assert captured["env"]["GENIESIM_OMNI_DOCUMENTS_DIR"] == str(output_dir / "_kit_documents")
 
 
 def test_discover_repo_root_falls_back_to_checkout_root_from_package(monkeypatch, tmp_path):

@@ -243,6 +243,13 @@ import them into your Open WebUI instance.
 | [`config/function-save_code_to_file.json`](src/geniesim_generator/config/function-save_code_to_file.json) | Open WebUI function export of `server/save_to_local.py` |
 | [`config/save_data_gen.py`](src/geniesim_generator/config/save_data_gen.py) | Open WebUI action: parse `root_scene()` from chat → write benchmark `data_gen.py` |
 
+The browser-facing scene-generator name is `OLASim`, with an `O` model avatar.
+This is presentation-only: retain the internal model id `geniesimscenegen` and
+all GenieSim package, path, DSL, and tool names so existing integrations remain
+compatible. The model name and avatar live in
+`config/geniesimscenegen.json`; do not rename backend packages or IDs as part
+of browser-facing branding changes.
+
 ---
 
 ## 8. Key invariants

@@ -42,7 +42,7 @@ Anything not consumed by the verb is forwarded verbatim to
 | `--host_ip=IP` | VR host IP (auto-detected if omitted) |
 | `--port=N` | VR server port (default `8080`) |
 | `--robot_cfg=F` | Robot config json (default `G2_omnipicker.json`) |
-| `--device_type=T` | Teleop device (default `pico`) |
+| `--device_type=T` | Teleop device (`pico` or `keyboard`, default `pico`) |
 
 ### Interpreter selection
 
@@ -62,7 +62,7 @@ src/geniesim_teleop/
   teleop.py           # entry: TeleOp loop + main()  (geniesim-teleop console script)
   bridge.py           # entry: in-process image pub/sub bridge
   utils/              # logger, ros_utils, ros_nodes, vr_server, name/transform utils
-  devices/            # teleop_device (base), pico_device (Pico VR driver)
+  devices/            # teleop_device (base), pico_device (Pico VR driver), keyboard_device
   config/             # robot_interface.py — robot descriptors (G2)
   data_recording/     # rosbag → HDF5 pipeline (extract_ros_bag, process_data, sim_data_converter)
   app/                # prebuilt motion-control runtime (binaries, robot cfg, vendored msgs) — shipped as package-data
@@ -112,6 +112,12 @@ isn't installed.
 
 ```bash
 geniesim teleop run --device_type=pico --port=8080
+```
+
+Without a Pico headset:
+
+```bash
+geniesim teleop run --device_type=keyboard
 ```
 
 ### Launch the in-process bridge

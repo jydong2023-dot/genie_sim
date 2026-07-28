@@ -24,8 +24,10 @@ conda activate geniesim-generator
 export OPENAI_API_KEY="$(tr -d '\r\n' < \
   /home/user/djy/genie_sim/source/geniesim_generator/openai_key.yaml)"
 
-export GENIESIM_ASSETS_DIR="$(python -c \
-  'import geniesim_assets, os; print(os.path.dirname(geniesim_assets.__file__))')"
+# export GENIESIM_ASSETS_DIR="$(python -c \
+#   'import geniesim_assets, os; print(os.path.dirname(geniesim_assets.__file__))')"
+
+export GENIESIM_ASSETS_DIR=/home/user/djy/geniesim_assets/
 ```
 
 检查变量是否已经设置，但不要打印 Key：
@@ -81,7 +83,7 @@ curl -fsS -X POST \
 ### 4. 在 Open WebUI 输入自然语言
 
 1. 浏览器打开 `http://127.0.0.1:3000`。
-2. 在模型选择器中选择 `GenieSim Generator`。
+2. 在模型选择器中选择 `OLASim`。
 3. 输入自然语言场景描述，例如：
 
 ```text
@@ -270,7 +272,7 @@ http://127.0.0.1:3000
 
 如果出现 `set OPENAI_API_KEY` 或 `set GENIESIM_ASSETS_DIR`，说明当前终端没有加载变量。重新执行“运行 demo”的第 1 步。Docker 容器已经运行并不代表新终端自动继承这些变量。
 
-### WebUI 中没有 GenieSim Generator
+### WebUI 中没有 OLASim
 
 检查是否已经导入：
 

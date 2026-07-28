@@ -6,7 +6,6 @@ import omni.graph.core as og
 from isaacsim.core.nodes.scripts.utils import set_target_prims
 
 from common.base_utils.logger import logger
-from common.base_utils.ros_nodes.sim_ros_node import JointStatePubRosNode
 
 
 class USDBase:
@@ -246,6 +245,8 @@ class USDBase:
         )
 
     def publish_articulation_action(self, robot, step_size, topic_name="/articulation_action"):
+        from common.base_utils.ros_nodes.sim_ros_node import JointStatePubRosNode
+
         frame_id = topic_name
 
         def get_articulation_action():

@@ -5,7 +5,18 @@
 import logging
 import os, sys
 from datetime import datetime
-from colorama import Fore, Style, init
+try:
+    from colorama import Fore, Style, init
+except ModuleNotFoundError:
+    class _NoColor:
+        BLACK = RED = GREEN = YELLOW = BLUE = MAGENTA = CYAN = WHITE = ""
+        RESET = RESET_ALL = BRIGHT = DIM = NORMAL = ""
+
+    Fore = _NoColor()
+    Style = _NoColor()
+
+    def init(*args, **kwargs):
+        return None
 
 init()
 

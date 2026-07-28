@@ -14,7 +14,6 @@ import numpy as np
 import omni
 import omni.replicator.core as rep
 import omni.timeline
-import rclpy
 import yaml
 from isaacsim.core.api.materials import OmniGlass, OmniPBR, PhysicsMaterial
 from isaacsim.core.api.objects import cuboid, cylinder
@@ -31,7 +30,6 @@ from omni.physx.scripts import utils
 from pxr import Gf, PhysxSchema, Sdf, Usd, UsdGeom, UsdPhysics, UsdShade
 
 from common.base_utils.logger import logger
-from common.base_utils.ros_nodes.server_node import ServerNode
 from common.base_utils.transform_utils import mat2quat_wxyz, quat2mat_wxyz
 from common.data_filter.runtime_checker import CheckerStatus, create_checker
 from server.command_enum import Command, command_value_to_string
@@ -90,6 +88,7 @@ class CommandController:
         self.gripper_state_R = ""
         self.gripper_state = ""
         self.condition = threading.Condition()
+        self.command_lock = threading.Lock()
         self.result_queue = queue.Queue()
         self.target_position = np.array([0, 0, 0])
         self.target_rotation = np.array([0, 0, 0])
@@ -149,6 +148,8 @@ class CommandController:
         self.timing_lock = threading.Lock()  # For thread-safe timing statistics
         # ros
         if publish_ros:
+            import rclpy
+
             rclpy.init()
 
     def _timing_context(self, function_name: str):
@@ -973,6 +974,8 @@ class CommandController:
                         )
                         self.process.append(subpro)
                     if not self.ros_node_initialized:
+                        from common.base_utils.ros_nodes.server_node import ServerNode
+
                         self.server_ros_node = ServerNode(robot_name=self.robot_name)
                         self.ros_node_initialized = True
                     self.data_to_send = "Start"
@@ -993,10 +996,13 @@ class CommandController:
                     for process in self.process:
                         try:
                             if process.poll() is None:
-                                os.killpg(os.getpgid(process.pid), signal.SIGINT)
-                                process.wait(timeout=5)  # Wait for rosbag to exit completely
+                                stop_timeout = float(os.getenv("GENIESIM_ROSBAG_STOP_TIMEOUT", "120"))
+                                process.wait(timeout=stop_timeout)  # Wait for rosbag metadata to be written.
+                        except subprocess.TimeoutExpired as e:
+                            logger.info(f"Recording process stop timeout for {process.pid}: {e}")
+                            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
                         except Exception as e:
-                            logger.info(f"Failed to force terminate process {process.pid}: {e}")
+                            logger.info(f"Failed to wait for recording process {process.pid}: {e}")
                             os.killpg(os.getpgid(process.pid), signal.SIGKILL)
                     self.ui_builder.remove_graph(self.graph_path)
 
@@ -1289,16 +1295,18 @@ class CommandController:
             parameters["command_controller"] = self
             parameters["checker_name"] = checker_config["checker_name"]
             self.cur_runtime_checker = create_checker(**parameters)
-        self.cur_runtime_checker.check()
-        if self.cur_runtime_checker.status == CheckerStatus.PASS:
+        status = self.cur_runtime_checker.check()
+        if status == CheckerStatus.PASS:
             self.data_to_send = "success"
             self.cur_runtime_checker = None
         elif (
-            self.cur_runtime_checker.status == CheckerStatus.FAIL
-            or self.cur_runtime_checker.status == CheckerStatus.ERROR
+            status == CheckerStatus.FAIL
+            or status == CheckerStatus.ERROR
         ):
             self.data_to_send = "fail"
             self.cur_runtime_checker = None
+        else:
+            self.data_to_send = "running"
         return
 
     # update
@@ -1454,7 +1462,8 @@ class CommandController:
             self.result_queue.put(result)
 
     def blocking_start_server(self, data, Command):
-        self._on_blocking_thread(data, Command)
+        with self.command_lock:
+            self._on_blocking_thread(data, Command)
         if not self.result_queue.empty():
             result = self.result_queue.get()
             return result

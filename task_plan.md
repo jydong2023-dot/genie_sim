@@ -25,6 +25,7 @@ Analyze `/home/user/djy/genie_sim` and summarize architecture, major modules, ex
 | 17. In-place augmentation and preview gallery | complete | Appends after the highest numeric instance by default, replaces on request, previews exactly the generated IDs, saves three cameras per instance, and builds a contact sheet; 43 tests and append/replace/dry-run smoke checks passed. |
 | 18. Host/container execution runbook | complete | Verified the stable 5.1 image/container, live mounts and user environment, correct task/YAML name, exact host startup and container execution commands, output paths, replacement flow, and teardown. |
 | 19. Extract `scene_augmentation` package | complete | Added the sibling package and standalone CLI, moved generator/contact-sheet core, retained Benchmark preview/runtime adapters and compatibility imports, wired bootstrap/Docker/docs, built a wheel, and passed 46 tests plus standalone/adapter smokes. |
+| 20. Regenerate `s2r` initial-scene previews | complete | Rendered all 8 matching configs in Isaac preview mode with zero inference connections, enlarged the instruction overlay to 29 px glyph height at 1280 px, verified 24 camera images, and refreshed the 8 delivered previews plus collage. |
 
 ## Constraints
 - Treat existing user changes as owned by the user.
@@ -36,10 +37,14 @@ Analyze `/home/user/djy/genie_sim` and summarize architecture, major modules, ex
 - The current request is read-only diagnosis: do not install, upgrade, or modify packages in `geniesim-generator` without explicit authorization.
 - User explicitly requested a permanent fix for the Open WebUI `No code blocks found` failure; source, export, tests, and documentation are in scope.
 - User explicitly requested the generic generator use a new task-neutral name and that the prior red/black compatibility mode and all task-specific generator code be removed.
+- For phase 20, select tasks from `source/geniesim_benchmark/src/geniesim_benchmark/config` whose task/config name contains `s2r`; render initial scenes only, do not execute inference, and make instruction text visibly larger than in the prior previews.
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---|---|
+| Combined phase-20 planning patch referenced the wrong `findings.md` heading | 1 | Inspect the three file headers, then apply a narrowly anchored patch using each file's actual heading. |
+| First enlarged overlay scale produced 26 px glyphs, below the 28 px regression target | 1 | Measure candidate OpenCV scales directly; use a 1.4 cap (`width / 900`) so 1280 px previews produce 29 px glyphs with margin. |
+| Host artifact verification treated container metadata paths under `/workspace` as host absolute paths | 1 | Map each metadata image path relative to `/workspace` back onto the repository root, then rerun the assertions without changing generated artifacts. |
 | Open WebUI official-doc web search returned a response decode error | 1 | Use a direct fetch from the official Open WebUI documentation instead of retrying the same search. |
 | Isolated worktree creation triggered a Git LFS smudge failure because the repository exceeded its LFS budget | 1 | Inspect the partial worktree state, then recreate with `GIT_LFS_SKIP_SMUDGE=1`; generator tests do not require the unrelated robot mesh payloads. |
 | `pytest` collection: `ModuleNotFoundError: geniesim_benchmark` | 1 | Diagnose as uninstalled `src/` layout; rerun with target `src` on `PYTHONPATH` without changing code. |

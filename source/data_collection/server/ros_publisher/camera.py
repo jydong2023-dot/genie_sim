@@ -11,7 +11,6 @@ import omni.syntheticdata._syntheticdata as sd
 from isaacsim.sensors.camera import Camera
 
 from common.base_utils.logger import logger
-from common.base_utils.ros_nodes.sim_ros_node import ImagePubRosNode
 from server.ros_publisher.camera_noiser import apply_noise_to_image, get_random_parameters
 
 
@@ -140,6 +139,8 @@ def publish_rgb(camera: Camera, freq: int, topic=""):
 
 
 def publish_noised_rgb(camera: Camera, step_size: int, topic="", **kwargs):
+    from common.base_utils.ros_nodes.sim_ros_node import ImagePubRosNode
+
     resolution = camera.get_resolution()
     rp = rep.create.render_product(camera.prim_path, (resolution[0], resolution[1]))
     annotator = rep.AnnotatorRegistry.get_annotator("rgb")

@@ -2,8 +2,11 @@
 
 A data collection system for robotic simulation tasks using Isaac Sim and cuRobo.
 
+> **Quick start (Docker, two terminals):** see [README_DEMO.md](README_DEMO.md) for a step-by-step guide to enter the container and run the `sort_the_fruit_into_the_box_apple_g2` demo.
+
 ## Table of Contents
 
+- [Docker Demo (Two Terminals)](README_DEMO.md)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
   - [Option 1: Docker Container (Recommended)](#option-1-docker-container-recommended)
@@ -11,6 +14,7 @@ A data collection system for robotic simulation tasks using Isaac Sim and cuRobo
     - [One-Click Data Collection (Recommended)](#one-click-data-collection-recommended)
     - [Interactive Mode](#interactive-mode)
   - [Option 2: Local Deployment](#option-2-local-deployment)
+- [Supported Task Families](#supported-task-families)
 - [Usage Examples](#usage-examples)
   - [Layout generation and Isaac preview (no trajectory collection)](#layout-generation-and-isaac-preview-no-trajectory-collection)
   - [Docker - Automated Data Collection](#docker-automated-data-collection)
@@ -249,6 +253,48 @@ python scripts/data_collector_server.py --enable_physics --enable_curobo --publi
 # Terminal 2
 python scripts/run_data_collection.py --task_template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json --use_recording
 ```
+
+## Supported Task Families
+
+The built-in data collection task templates live under `tasks/geniesim_2025`.
+The current tree contains 295 JSON task templates across 22 task families.
+A machine-readable copy of this table is available in [`task_family_counts.csv`](task_family_counts.csv).
+
+| Task family | Category | G1 | G2 | Other | Total |
+|---|---|---:|---:|---:|---:|
+| `pick_billards_of_specific_color` | pick_or_pick_up | 4 | 4 | 0 | 8 |
+| `pick_building_block_of_specific_color` | pick_or_pick_up | 5 | 5 | 0 | 10 |
+| `pick_building_block_of_specific_shape` | pick_or_pick_up | 0 | 7 | 0 | 7 |
+| `pick_building_block_of_specific_size` | pick_or_pick_up | 6 | 6 | 0 | 12 |
+| `pick_building_block_with_specific_number` | pick_or_pick_up | 0 | 10 | 0 | 10 |
+| `pick_fruit_of_specific_size` | pick_or_pick_up | 0 | 10 | 0 | 10 |
+| `pick_object_with_specific_type` | pick_or_pick_up | 0 | 5 | 0 | 5 |
+| `pick_pen_of_specific_color` | pick_or_pick_up | 5 | 5 | 0 | 10 |
+| `pick_specific_object` | pick_or_pick_up | 1 | 1 | 0 | 2 |
+| `pick_the_object_at_specific_position` | pick_or_pick_up | 1 | 1 | 0 | 2 |
+| `pick_up_the_stationery` | pick_or_pick_up | 0 | 1 | 0 | 1 |
+| `pick_up_with_and_command` | pick_or_pick_up | 0 | 1 | 0 | 1 |
+| `pick_up_with_common_sense` | pick_or_pick_up | 0 | 101 | 0 | 101 |
+| `pick_up_with_not_command` | pick_or_pick_up | 0 | 12 | 0 | 12 |
+| `pick_up_with_or_command` | pick_or_pick_up | 0 | 31 | 0 | 31 |
+| `place_blocks_into_box` | place | 15 | 15 | 0 | 30 |
+| `place_object_into_box_at_the_specific_position` | place | 5 | 2 | 0 | 7 |
+| `place_object_into_box_of_specific_color` | place | 10 | 5 | 0 | 15 |
+| `place_object_into_box_of_specific_size` | place | 5 | 2 | 0 | 7 |
+| `put_the_pen_into_the_pen_holder` | put | 0 | 1 | 0 | 1 |
+| `sort_fruit` | sort | 6 | 6 | 0 | 12 |
+| `straighten_object` | straighten | 0 | 0 | 1 | 1 |
+
+Category totals:
+
+| Category | G1 | G2 | Other | Total |
+|---|---:|---:|---:|---:|
+| pick_or_pick_up | 22 | 200 | 0 | 222 |
+| place | 35 | 24 | 0 | 59 |
+| put | 0 | 1 | 0 | 1 |
+| sort | 6 | 6 | 0 | 12 |
+| straighten | 0 | 0 | 1 | 1 |
+| **All** | **63** | **231** | **1** | **295** |
 
 ## Usage Examples
 

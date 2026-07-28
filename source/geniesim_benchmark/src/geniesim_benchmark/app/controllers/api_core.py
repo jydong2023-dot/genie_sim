@@ -54,6 +54,7 @@ from geniesim_benchmark.app.workflow.ui_builder import UIBuilder
 from geniesim_benchmark.robot.utils import quaternion_rotate
 from geniesim_benchmark.utils.name_utils import *
 from geniesim_benchmark.utils.system_utils import *
+from geniesim_benchmark.benchmark.render_profile import format_render_profile, is_head_camera_name
 
 import time
 
@@ -654,7 +655,9 @@ class APICore:
             logger.info(f"[shared_cam] env_{env_idx} first render — subframes={n_subframes}")
         else:
             n_subframes = self.shared_cam_render_frames
+        render_t0 = time.perf_counter()
         self.render_once(n_subframes=n_subframes)
+        render_wait_ms = (time.perf_counter() - render_t0) * 1000
 
         images = {}
         depths = {}
@@ -662,7 +665,20 @@ class APICore:
             name = info["name"]
             rgb_ann = self._shared_cam_rgb_ann.get(name)
             if rgb_ann is not None:
+                get_data_t0 = time.perf_counter()
                 data = rgb_ann.get_data()
+                get_data_ms = (time.perf_counter() - get_data_t0) * 1000
+                if is_head_camera_name(name):
+                    logger.info(
+                        format_render_profile(
+                            camera_name=name,
+                            env_idx=env_idx,
+                            render_wait_ms=render_wait_ms,
+                            get_data_ms=get_data_ms,
+                            shape=getattr(data, "shape", None),
+                            subframes=n_subframes,
+                        )
+                    )
                 if data is not None and data.size > 0:
                     images[name] = data[..., :3]
             depth_ann = self._shared_cam_depth_ann.get(name)

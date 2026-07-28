@@ -1,5 +1,15 @@
 # Genie Sim Code Analysis Findings
 
+## `s2r` initial-scene preview regeneration (2026-07-24)
+- The user requires all benchmark tasks whose names contain `s2r` to receive freshly rendered initial-scene previews from Isaac Sim, with inference disabled and a larger, legible instruction overlay.
+- Exactly eight runnable YAMLs match `s2r`: `bimanual_chip_handover`, `grasp_targets`, `organize_items`, `pack_in_supermarket`, `place_block_into_drawer`, `select_color`, `size_recognize`, and `sort_fruit` (all G1 Omnipicker configs).
+- The preview command uses `--benchmark.preview=true`, `--benchmark.record=false`, and one episode/instance. `CoRobotPolicy.get_payload()` saves the rendered frames and returns `None` in preview mode; `act()` returns immediately and never calls the inference WebSocket.
+- Root-cause reproduction: `annotate_instruction()` caps `font_scale` at `0.7`; on a 1280x800 black fixture its single-line white glyph bounding box is only 19 pixels high. This matches the user's report that the prior instruction text is too small.
+- The corrected scale is `max(0.7, min(1.4, width / 900.0))` with thicker strokes above scale 1.0. On 1280x800 output the tested glyph height is 29 pixels; long S2R instructions wrap to two full lines without resizing the rendered frame.
+- The real Isaac batch finished all eight configs with `status=ok`, `exit_code=0`, and three camera images each. All 24 images are nonblank; the eight head views were visually checked for scene framing, readable text, wrapping, and truncation.
+- All eight Kit logs contain a `[Preview] Saved images` marker and contain no `Connecting to policy server` or `Sending payload to server` marker, confirming the preview run did not execute inference.
+- Final operator-facing artifacts are the per-task directories under `task_previews/`, the eight refreshed PNGs under `task_previews_with_instructions/`, and the rebuilt `task_previews_with_instructions/s2r_collage.png`.
+
 ## In-place augmentation and preview gallery (2026-07-22)
 - Keeping output inside the original task directory preserves the existing task YAML `sub_task_name` and avoids creating duplicate task registrations.
 - Default append mode must allocate IDs from `max(existing numeric directory) + 1`; replace mode can safely reuse IDs starting at zero after staging the selected source instance.

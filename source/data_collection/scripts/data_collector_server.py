@@ -9,6 +9,10 @@ import sys
 root_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root_directory)
 
+from common.base_utils.isaac_numpy_runtime import reexec_with_isaacsim_numpy_libs
+
+reexec_with_isaacsim_numpy_libs()
+
 from common.base_utils.logger import logger
 
 if os.path.exists(os.path.join(root_directory, "git_commit_info.txt")):
@@ -62,7 +66,8 @@ simulation_app._carb_settings.set("/app/asyncRendering", False)
 from isaacsim.core.api import World
 from isaacsim.core.utils import extensions
 
-extensions.enable_extension("isaacsim.ros2.bridge")
+if args.publish_ros:
+    extensions.enable_extension("isaacsim.ros2.bridge")
 import omni
 
 from server.command_controller import CommandController

@@ -23,6 +23,7 @@ from geniesim_benchmark.utils.infer_post_process import process_action, get_arm_
 from geniesim_benchmark.utils.name_utils import ROBOT_CONFIGS, DEFAULT_ROBOT_CONFIG
 from geniesim_benchmark.utils.ikfk_utils import get_shared_ikfk_solver
 from geniesim_benchmark.utils.comm.websocket_client import ws_connect_compat
+from geniesim_benchmark.preview_overlay import annotate_instruction
 
 logger = Logger()
 
@@ -235,15 +236,15 @@ class CoRobotPolicy(BasePolicy):
             os.makedirs(debug_dir, exist_ok=True)
             cv2.imwrite(
                 os.path.join(debug_dir, f"preview_{self.infer_cnt:04d}_{ts}_head.png"),
-                cv2.cvtColor(obs["images"]["head"], cv2.COLOR_RGB2BGR),
+                cv2.cvtColor(annotate_instruction(obs["images"]["head"], task_instruction), cv2.COLOR_RGB2BGR),
             )
             cv2.imwrite(
                 os.path.join(debug_dir, f"preview_{self.infer_cnt:04d}_{ts}_left_hand.png"),
-                cv2.cvtColor(obs["images"]["left_hand"], cv2.COLOR_RGB2BGR),
+                cv2.cvtColor(annotate_instruction(obs["images"]["left_hand"], task_instruction), cv2.COLOR_RGB2BGR),
             )
             cv2.imwrite(
                 os.path.join(debug_dir, f"preview_{self.infer_cnt:04d}_{ts}_right_hand.png"),
-                cv2.cvtColor(obs["images"]["right_hand"], cv2.COLOR_RGB2BGR),
+                cv2.cvtColor(annotate_instruction(obs["images"]["right_hand"], task_instruction), cv2.COLOR_RGB2BGR),
             )
             logger.info(f"[Preview] Saved images to {debug_dir}/preview_{self.infer_cnt:04d}_{ts}_*.png")
             self.infer_cnt += 1

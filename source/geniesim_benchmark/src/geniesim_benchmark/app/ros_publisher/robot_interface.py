@@ -11,8 +11,10 @@ import omni.replicator.core as rep
 from isaacsim.core.prims import SingleArticulation
 from isaacsim.core.utils.prims import get_prim_object_type
 from geniesim_benchmark.utils.usd_utils import *
+from geniesim_benchmark.benchmark.render_profile import format_render_profile, is_head_camera_name
 
 import numpy as np
+import time
 
 from pxr import UsdPhysics, Usd
 
@@ -416,7 +418,20 @@ class RobotInterface:
             annot = self.annotators.get(cam)
             if annot is None:
                 continue
+            get_data_t0 = time.perf_counter()
             img = annot.get_data()
+            get_data_ms = (time.perf_counter() - get_data_t0) * 1000
+            if is_head_camera_name(cam):
+                logger.info(
+                    format_render_profile(
+                        camera_name=cam,
+                        env_idx=0,
+                        render_wait_ms=0.0,
+                        get_data_ms=get_data_ms,
+                        shape=getattr(img, "shape", None),
+                        subframes=1,
+                    )
+                )
             if img is None or img.size == 0:
                 continue
             buf = self._img_data_cache.get(cam)

@@ -22,12 +22,13 @@ from common.base_utils.logger import logger
 from common.base_utils.transform_utils import (
     add_random_noise_to_pose,
     calculate_rotation_matrix,
+    mat2quat_wxyz,
     pose_difference,
     pose_from_position_quaternion,
     quaternion_rotate,
 )
 
-MAX_ATTEMPTIONS = 4
+MAX_ATTEMPTIONS = int(os.environ.get("GENIESIM_STAGE_MAX_ATTEMPTS", "4"))
 
 
 def load_task_solution(task_info):
@@ -701,6 +702,18 @@ class DataCollectionAgent(BaseAgent):
         if target_gripper_pose is None:
             state = True
         else:
+            max_target_position_norm = extra_params.get("max_target_position_norm", None)
+            if max_target_position_norm is not None:
+                target_position_norm = np.linalg.norm(target_gripper_pose[:3, 3])
+                if target_position_norm > max_target_position_norm:
+                    logger.warning(
+                        "Substage %s step_id %s: target gripper pose norm %.3f exceeds %.3f",
+                        index,
+                        step_index,
+                        target_position_norm,
+                        max_target_position_norm,
+                    )
+                    return False, True
             if motion_type == "Simple":
                 ik_success, _ = self.robot.solve_ik(
                     np.array([target_gripper_pose]),
@@ -744,6 +757,25 @@ class DataCollectionAgent(BaseAgent):
                 gripper_action_timing=gripper_action_timing,
                 from_current_pose=from_current_pose,
             )
+            if not state and motion_type == "AvoidObs" and extra_params.get("retry_simple_on_motion_fail", False):
+                logger.warning(
+                    "Substage %s step_id %s: AvoidObs move failed, retry Simple",
+                    index,
+                    step_index,
+                )
+                state = self.robot.move_pose(
+                    target_gripper_pose,
+                    "Simple",
+                    arm=arm,
+                    block=True,
+                    goal_offset=goal_offset,
+                    path_constraint=path_constraint,
+                    offset_and_constraint_in_goal_frame=offset_and_constraint_in_goal_frame,
+                    disable_collision_links=disable_collision_links,
+                    motion_run_ratio=motion_run_ratio,
+                    gripper_action_timing=gripper_action_timing,
+                    from_current_pose=from_current_pose,
+                )
         if not state:
             step_success = False
             need_retry = True
@@ -807,17 +839,55 @@ class DataCollectionAgent(BaseAgent):
                 else:
                     logger.info("\n")
 
+                attached_obj_id_for_sync = self.attached_obj_id
                 if gripper_action == "close" and action_type == "pick":
                     self.attached_obj_id = stage.passive_obj_id
-                elif gripper_action == "open":
-                    self.attached_obj_id = None
-                if self.attached_obj_id is not None:
-                    arm = stage.extra_params.get("arm", "right")
+                    attached_obj_id_for_sync = self.attached_obj_id
+                if self.attached_obj_id is not None and gripper_action != "open":
                     if self.attached_obj_id.split("/")[0] not in self.articulated_objs:
                         self.robot.client.attach_obj(
                             prim_paths=[objects[self.attached_obj_id].prim_path],
                             is_right=arm == "right",
                         )
+                if attached_obj_id_for_sync is not None and extra_params.get("sync_attached_root_pose", False):
+                    attached_obj = objects[attached_obj_id_for_sync]
+                    sync_to_passive = (
+                        gripper_action == "open"
+                        and extra_params.get("sync_attached_root_to_passive_on_open", False)
+                        and stage.passive_obj_id in objects
+                    )
+                    if sync_to_passive:
+                        sync_pose = objects[stage.passive_obj_id].obj_pose
+                        root_offset = np.array(
+                            extra_params.get("sync_attached_root_passive_offset", [0.0, 0.0, 0.0]),
+                            dtype=float,
+                        )
+                        sync_target_name = objects[stage.passive_obj_id].prim_path
+                    else:
+                        sync_pose = self.robot.get_ee_pose(ee_type="gripper", id=arm)
+                        root_offset = np.array(
+                            extra_params.get("sync_attached_root_offset", [0.0, 0.0, 0.0]),
+                            dtype=float,
+                        )
+                        sync_target_name = f"{arm} gripper"
+                    object_pose = attached_obj.obj_pose
+                    self.robot.client.set_object_pose(
+                        [
+                            {
+                                "prim_path": attached_obj.prim_path,
+                                "position": (sync_pose[:3, 3] + root_offset).tolist(),
+                                "rotation": mat2quat_wxyz(object_pose[:3, :3]).tolist(),
+                            }
+                        ],
+                        [],
+                    )
+                    logger.info(
+                        "Synced attached root %s to %s",
+                        attached_obj.prim_path,
+                        sync_target_name,
+                    )
+                if gripper_action == "open":
+                    self.attached_obj_id = None
                 self.robot.client.set_frame_state(
                     action_type,
                     step_index,

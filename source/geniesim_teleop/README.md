@@ -40,6 +40,24 @@ Support joystick control for robot waist, left/right end effector and base movem
 > accessible as a standard drive on the computer. The APK file can then be
 > installed by copying it directly to this drive.
 
+### Keyboard Setup
+
+For smoke testing without a Pico headset, run the teleop loop with
+`--device_type=keyboard` or start the host-side launcher with
+`GENIESIM_TELEOP_DEVICE_TYPE=keyboard`. Focus the teleop terminal before using
+the keys.
+
+| Key | Function |
+|:---:|---|
+| W / S | move base forward / backward |
+| A / D | turn base left / right |
+| 1 + arrow keys, R / F | enable and move left end effector |
+| 2 + I / K, J / L, U / O | enable and move right end effector |
+| Q / E | control left / right gripper |
+| Z | reset arms |
+| X | reset body and head |
+| C | start recording |
+
 ### Launch Setup
 
 #### 1. Data Collection
@@ -49,6 +67,12 @@ container (after `geniesim docker5.1 up` succeeds):
 
 ```bash
 genie_sim$ ./source/geniesim_teleop/scripts/autoteleop.sh
+```
+
+Without a Pico headset:
+
+```bash
+genie_sim$ GENIESIM_TELEOP_DEVICE_TYPE=keyboard ./source/geniesim_teleop/scripts/autoteleop.sh
 ```
 
 If you want to change tasks, please modify the `task_name` and `sub_task_name`

@@ -77,6 +77,10 @@ from isaacsim.core.api import World
 from geniesim_benchmark.app.controllers import APICore
 from geniesim_benchmark.app.task_manager import TaskManager
 from geniesim_benchmark.app.workflow.ui_builder import UIBuilder
+from geniesim_benchmark.benchmark.render_profile import format_frame_profile
+from geniesim_benchmark.plugins.logger import Logger
+
+logger = Logger()
 
 
 def main():
@@ -117,10 +121,28 @@ def main():
     task_manager.start()
 
     step = 0
+    render_frame_idx = 0
     try:
         while simulation_app.is_running():
-            ui_builder.my_world.step(render=task_manager.api_core.frame_render_enabled)
+            render_enabled = task_manager.api_core.frame_render_enabled
+            world_step_t0 = time.perf_counter()
+            ui_builder.my_world.step(render=render_enabled)
+            world_step_ms = (time.perf_counter() - world_step_t0) * 1000
+
+            render_step_t0 = time.perf_counter()
             task_manager.api_core.render_step()
+            render_step_ms = (time.perf_counter() - render_step_t0) * 1000
+
+            if render_enabled:
+                logger.info(
+                    format_frame_profile(
+                        frame_idx=render_frame_idx,
+                        render_enabled=render_enabled,
+                        world_step_ms=world_step_ms,
+                        render_step_ms=render_step_ms,
+                    )
+                )
+                render_frame_idx += 1
 
             if task_manager.api_core.exit:
                 task_manager.api_core.post_process()

@@ -24,6 +24,7 @@
 CONTAINER_NAME="${GENIESIM_CONTAINER:-geniesim3}"
 TERMINAL_ENV="autorun"
 PROCESS_CLIENT="teleop|ros|geniesim_teleop"
+TELEOP_DEVICE_TYPE="${GENIESIM_TELEOP_DEVICE_TYPE:-pico}"
 
 # --- Paths (container-side, repo mounted at /workspace) --------------------
 REPO_IN_CONTAINER="${GENIESIM_WORKSPACE:-/workspace}"
@@ -104,7 +105,7 @@ declare -a COMMANDS=(
     "docker exec -it $CONTAINER_NAME bash -ic 'export LD_LIBRARY_PATH=${ISAAC_BRIDGE_LIB}:\$LD_LIBRARY_PATH && omni_python ${SIM_APP} --config ${TELEOP_YAML}'"
     "docker exec -it $CONTAINER_NAME bash -ic 'source /opt/ros/jazzy/setup.bash && source ${TELEOP_APP}/bin/env.sh && export PYTHONPATH=${NUMPY1_PATH}:\$PYTHONPATH && python3 ${TELEOP_PKG}/bridge.py'"
     "docker exec -it $CONTAINER_NAME bash -ic 'source /opt/ros/jazzy/setup.bash && source ${TELEOP_APP}/bin/env.sh && ${TELEOP_APP}/bin/start_mc.sh --no-tool'"
-    "docker exec -it $CONTAINER_NAME bash -ic 'source /opt/ros/jazzy/setup.bash && source ${TELEOP_APP}/bin/env.sh && export SIM_REPO_ROOT=${REPO_IN_CONTAINER} && export PYTHONPATH=${NUMPY1_PATH}:\$PYTHONPATH && python3 -m geniesim_teleop.teleop'"
+    "docker exec -it $CONTAINER_NAME bash -ic 'source /opt/ros/jazzy/setup.bash && source ${TELEOP_APP}/bin/env.sh && export SIM_REPO_ROOT=${REPO_IN_CONTAINER} && export PYTHONPATH=${NUMPY1_PATH}:\$PYTHONPATH && python3 -m geniesim_teleop.teleop --device_type=${TELEOP_DEVICE_TYPE}'"
 )
 declare -a DELAYS=(1 15 3 5 5)
 

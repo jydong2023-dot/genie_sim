@@ -4,7 +4,7 @@
 
 """``geniesim teleop {run,bridge}`` — drive the ``geniesim_teleop`` package.
 
-``run`` launches the VR / Pico teleoperation loop (``geniesim_teleop.teleop``);
+``run`` launches the VR / Pico / keyboard teleoperation loop (``geniesim_teleop.teleop``);
 ``bridge`` launches the in-process image pub/sub bridge
 (``geniesim_teleop.bridge``). Both wrap a module invocation::
 
@@ -84,7 +84,7 @@ def _print_usage() -> None:
     print()
     print(f"{BOLD}Subcommands:{RST}")
     print(f"  {CYAN}run{RST} [--client_host H:P] [--port N] [--robot_cfg F] [--device_type T]")
-    print(f"     {DIM}▶️  Launch the VR / Pico teleoperation loop (geniesim_teleop.teleop).{RST}")
+    print(f"     {DIM}▶️  Launch the VR / Pico / keyboard teleoperation loop (geniesim_teleop.teleop).{RST}")
     print(f"  {CYAN}bridge{RST} [--mode inprocess]")
     print(f"     {DIM}🌉 Launch the in-process image pub/sub bridge (geniesim_teleop.bridge).{RST}")
     print()
@@ -93,10 +93,11 @@ def _print_usage() -> None:
     print(f"  {WHITE}--host_ip{RST}     {DIM}VR host IP (auto-detected if omitted){RST}")
     print(f"  {WHITE}--port{RST}        {DIM}VR server port (default 8080){RST}")
     print(f"  {WHITE}--robot_cfg{RST}   {DIM}Robot config json (default G2_omnipicker.json){RST}")
-    print(f"  {WHITE}--device_type{RST} {DIM}Teleop device (default pico){RST}")
+    print(f"  {WHITE}--device_type{RST} {DIM}Teleop device: pico or keyboard (default pico){RST}")
     print()
     print(f"{BOLD}Examples:{RST}")
     print(f"  {CYAN}geniesim teleop run{RST} --device_type=pico --port=8080")
+    print(f"  {CYAN}geniesim teleop run{RST} --device_type=keyboard")
     print(f"  {CYAN}geniesim teleop bridge{RST} --mode inprocess")
     print()
     print(f"{DIM}Anything after the subcommand (or any unknown flag) is forwarded verbatim.{RST}")

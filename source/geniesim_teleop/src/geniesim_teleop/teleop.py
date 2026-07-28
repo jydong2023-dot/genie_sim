@@ -11,7 +11,7 @@ from geniesim_teleop.utils.logger import Logger
 from geniesim_teleop.utils.ros_utils import RosUtils
 from geniesim_teleop.utils.name_utils import *
 from geniesim_teleop.devices.pico_device import PicoDevice
-from pynput import keyboard
+from geniesim_teleop.devices.keyboard_device import KeyboardDevice
 from geometry_msgs.msg import Pose
 
 import os, sys, argparse, math
@@ -108,6 +108,8 @@ class TeleOp(object):
     def setup_device(self):
         if self.device_type == "pico":
             self.device = PicoDevice(self.host_ip, self.port, self.robot_cfg)
+        elif self.device_type == "keyboard":
+            self.device = KeyboardDevice(self.robot_cfg)
         else:
             raise ValueError(f"Unsupported device_type {self.device_type}")
 
@@ -344,6 +346,8 @@ class TeleOp(object):
             self.is_recording = True
 
     def sub_keyboard_event(self):
+        from pynput import keyboard
+
         self.pressed_keys = set()
 
         def on_press(key):

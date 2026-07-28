@@ -1,7 +1,7 @@
 ---
 name: run-teleop
 description: >
-  Launch the geniesim_teleop VR / Pico teleoperation loop (or the
+  Launch the geniesim_teleop VR / Pico / keyboard teleoperation loop (or the
   in-process image bridge) using the `geniesim teleop` CLI verb, typically
   inside the Genie Sim GUI Docker container.
   Trigger: When the user asks to "start teleop", "run teleop", "启动遥操作",
@@ -15,7 +15,7 @@ prerequisites:
   - geniesim_cli:fresh-machine-setup   # see source/geniesim_cli/AGENTS.md § 0
 inputs:
   - name: device_type
-    desc: VR device family
+    desc: Teleop device family
     required: false
     default: pico
   - name: port
@@ -39,8 +39,8 @@ outputs:
 
 ## When to Use
 
-- User wants to teleoperate the simulated robot with a VR device (Pico) and
-  optionally record episodes.
+- User wants to teleoperate the simulated robot with a VR device (Pico) or
+  keyboard and optionally record episodes.
 - User references `geniesim_teleop`, `teleop.py`, or the teleop bridge.
 
 Do **not** use for:
@@ -53,8 +53,9 @@ Do **not** use for:
    Genie Sim Docker image (`geniesim docker up` → `geniesim docker into`)
    that's already set up. Outside the container, source your ROS overlay
    and have Isaac Sim available.
-2. **A VR device must be reachable.** The teleop loop opens a VR server
-   (default port `8080`) and waits for the Pico headset to connect.
+2. **A teleop device must be available.** For Pico, the teleop loop opens a VR
+   server (default port `8080`) and waits for the headset to connect. For
+   keyboard, focus the teleop terminal.
 3. **Working directory**: anywhere under the repo works — the CLI uses
    `find_spec` to locate the `geniesim_teleop` package.
 4. **Confirm before launching.** Teleop holds a GPU and a live device
@@ -65,7 +66,7 @@ Do **not** use for:
 ### Step 1 — Collect inputs
 
 Ask via `AskUserQuestion` (all optional — sensible defaults exist):
-- **Device type** (default `pico`).
+- **Device type** (`pico` or `keyboard`, default `pico`).
 - **VR port** (default `8080`).
 - **Robot config** (default `G2_omnipicker.json`).
 - **gRPC client host** (default `localhost:50051`).
@@ -76,6 +77,12 @@ Inside the GUI container (`geniesim docker into`):
 
 ```bash
 geniesim teleop run --device_type=pico --port=8080
+```
+
+Without a Pico headset:
+
+```bash
+geniesim teleop run --device_type=keyboard
 ```
 
 With explicit overrides:

@@ -166,6 +166,22 @@ def build_child_env(repo_root: Path) -> dict[str, str]:
     # run under system Python 3.12, so inheriting them causes stdlib ABI mismatches.
     env.pop("PYTHONPATH", None)
     env.pop("PYTHONHOME", None)
+    for key in (
+        "CONDA_PREFIX",
+        "CONDA_DEFAULT_ENV",
+        "CONDA_SHLVL",
+        "CONDA_PROMPT_MODIFIER",
+        "_CE_CONDA",
+        "_CE_M",
+    ):
+        env.pop(key, None)
+    local_paths = [
+        repo_root / "source" / "geniesim_cli" / "src",
+        repo_root / "source" / "geniesim_benchmark" / "src",
+        repo_root / "source" / "scene_augmentation" / "src",
+        repo_root.parent,
+    ]
+    env["PYTHONPATH"] = os.pathsep.join(str(path) for path in local_paths)
     env.setdefault("GENIESIM_SKIP_AUTOBOOT", "1")
     env["GENIESIM_REPO_ROOT"] = str(repo_root)
     env["SIM_REPO_ROOT"] = str(repo_root)
@@ -315,7 +331,10 @@ def run_one_config(
         )
         return metadata
 
-    proc = subprocess.run(cmd, env=build_child_env(repo_root))
+    child_env = build_child_env(repo_root)
+    child_env.setdefault("GENIESIM_KIT_RUNTIME_DIR", str(output_dir / "_kit_runtime"))
+    child_env.setdefault("GENIESIM_OMNI_DOCUMENTS_DIR", str(output_dir / "_kit_documents"))
+    proc = subprocess.run(cmd, env=child_env)
     images = archive_new_preview_images(
         debug_dir, before, task_dir, instance_ids=exact_ids
     )

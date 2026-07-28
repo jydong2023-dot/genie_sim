@@ -770,9 +770,14 @@ class ObservationService(sim_observation_service_pb2_grpc.SimObservationService)
 
     def get_checker_status(self, req, rsp):
         rsp = sim_observation_service_pb2.GetCheckerStatusRsp()
-        rsp.msg = self.server_function.blocking_start_server(
+        result = self.server_function.blocking_start_server(
             data={"checker": req.checker}, Command=Command.GET_CHECKER_STATUS
         )
+        if isinstance(result, str):
+            rsp.msg = result
+        else:
+            logger.error(f"GetCheckerStatus returned non-string result: {type(result).__name__}")
+            rsp.msg = "fail"
         return rsp
 
 

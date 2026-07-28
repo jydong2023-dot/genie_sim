@@ -1,6 +1,9 @@
 # Genie Sim Code Analysis Progress
 
 ## Session Log
+- 2026-07-24: Started phase 20 to enumerate all benchmark tasks whose names contain `s2r`, regenerate their initial-scene previews through Isaac with inference disabled, enlarge the instruction overlay, and visually validate the resulting images.
+- 2026-07-24: Traced the preview path end to end and proved it does not contact inference. Reproduced the small-text issue as a 19-pixel glyph height caused by the overlay's `0.7` font-scale cap; preparing a narrow test-first font-size correction.
+- 2026-07-24: Completed phase 20. The red-green overlay regression now enforces at least 28 px glyph height and produces 29 px at 1280 width. Isaac rendered all 8 `s2r` configs successfully (24 camera images), no connection/send inference log appeared, all head previews were visually inspected, and the 8 delivered PNGs plus `s2r_collage.png` were refreshed.
 - 2026-07-22: Started phase 19 after user approval: extracting the independent core package as `source/scene_augmentation` while retaining GenieSim Benchmark preview/runtime adapters.
 - 2026-07-22: Created the `scene_augmentation` package scaffold and standalone CLI, moved the 700-line generator core, extracted generic contact-sheet composition, converted the old generator module into a compatibility re-export, and wired Benchmark/umbrella/bootstrap/Docker metadata dependencies.
 - 2026-07-22: Completed phase 19. Added package docs/profile/tests, preserved the Benchmark preview adapter, updated module maps and generated dependency DAG, verified 46 tests, syntax, whitespace, core boundary, tier/Docker peer ordering, standalone and compatibility CLI smokes, and a Python 3.11 wheel build.

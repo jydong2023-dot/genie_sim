@@ -71,6 +71,8 @@ class PlaceStage(Stage):
         arm = self.extra_params.get("arm", "right")
         ee_pose = robot.get_ee_pose(ee_type="gripper", id=arm)
         gripper2obj = np.linalg.inv(object_pose) @ ee_pose
+        skip_pose_ik_filter = self.extra_params.get("skip_pose_ik_filter", False)
+        skip_pre_place_ik_filter = self.extra_params.get("skip_pre_place_ik_filter", False)
         passive_elements = self.passive_element
         active_elements = self.active_element
         if not isinstance(self.active_element, list):
@@ -122,30 +124,37 @@ class PlaceStage(Stage):
             target_gripper_poses, _ = random_downsample(
                 transforms=target_gripper_poses, downsample_num=100, replace=False
             )
-            ik_success, _ = robot.solve_ik(
-                target_gripper_poses,
-                ee_type="gripper",
-                type="Simple",
-                arm=arm,
-            )
-            target_gripper_poses = target_gripper_poses[ik_success]
+            if skip_pose_ik_filter:
+                target_gripper_poses_pass_ik = target_gripper_poses
+                ik_joint_positions = None
+                ik_joint_names = None
+                ik_jacobian_score = None
+                ik_link_poses = None
+            else:
+                ik_success, _ = robot.solve_ik(
+                    target_gripper_poses,
+                    ee_type="gripper",
+                    type="Simple",
+                    arm=arm,
+                )
+                target_gripper_poses = target_gripper_poses[ik_success]
 
-            if len(target_gripper_poses) == 0:
-                logger.warning(f"{self.action_type}: No target_obj_pose can pass isaac-sim IK")
-                continue
-            ik_success, ik_info = robot.solve_ik(
-                target_gripper_poses,
-                ee_type="gripper",
-                type="AvoidObs",
-                arm=arm,
-                output_link_pose=True,
-            )
+                if len(target_gripper_poses) == 0:
+                    logger.warning(f"{self.action_type}: No target_obj_pose can pass isaac-sim IK")
+                    continue
+                ik_success, ik_info = robot.solve_ik(
+                    target_gripper_poses,
+                    ee_type="gripper",
+                    type="AvoidObs",
+                    arm=arm,
+                    output_link_pose=True,
+                )
 
-            target_gripper_poses_pass_ik = target_gripper_poses[ik_success]
-            ik_joint_positions = ik_info["joint_positions"][ik_success]
-            ik_joint_names = ik_info["joint_names"][ik_success]
-            ik_jacobian_score = ik_info["jacobian_score"][ik_success]
-            ik_link_poses = ik_info["link_poses"][ik_success]
+                target_gripper_poses_pass_ik = target_gripper_poses[ik_success]
+                ik_joint_positions = ik_info["joint_positions"][ik_success]
+                ik_joint_names = ik_info["joint_names"][ik_success]
+                ik_jacobian_score = ik_info["jacobian_score"][ik_success]
+                ik_link_poses = ik_info["link_poses"][ik_success]
             if len(target_gripper_poses_pass_ik) == 0:
                 if self.extra_params.get("use_near_point", False):
                     logger.warning(f"{self.action_type}: No target_obj_pose can pass isaac curobo IK")
@@ -241,54 +250,57 @@ class PlaceStage(Stage):
                     )
                 pre_insert_obj_pose = anchor_pose[np.newaxis, ...] @ pre_insert_pose_canonical
                 pre_insert_gripper_pose = pre_insert_obj_pose @ gripper2obj[np.newaxis, ...]
-                ik_success_pre, ik_info_pre = robot.solve_ik(
-                    pre_insert_gripper_pose,
-                    ee_type="gripper",
-                    type="AvoidObs",
-                    arm=arm,
-                    output_link_pose=False,
-                )
-                # if noise makes the pre insert pose not reachable, try another noise or finally discard noise
-                if (
-                    not ik_success_pre.all()
-                    and "pre_pose_noise" in self.extra_params
-                    and ik_success_pre.sum() < MIN_REMAIN_POSE_NUM
-                ):
-                    for try_time in range(MAX_TRY_TIMES):
-                        logger.info(f"try {try_time} times to add noise to pre insert pose")
-                        if try_time == MAX_TRY_TIMES - 1:
-                            logger.error("try to add noise to pre insert pose failed, use original pose")
-                            position_noise = 0
-                            rotation_noise = 0
-                        pre_insert_pose_canonical = add_noise(
-                            np.where(~ik_success_pre)[0],
-                            pre_insert_pose_canonical,
-                            origin_pre_insert_pose_canonical,
-                            position_noise,
-                            rotation_noise,
-                        )
-                        pre_insert_obj_pose = anchor_pose[np.newaxis, ...] @ pre_insert_pose_canonical
-                        pre_insert_gripper_pose = pre_insert_obj_pose @ gripper2obj[np.newaxis, ...]
-                        ik_success_pre, ik_info_pre = robot.solve_ik(
-                            pre_insert_gripper_pose,
-                            ee_type="gripper",
-                            type="AvoidObs",
-                            arm=arm,
-                            output_link_pose=False,
-                        )
-                        if ik_success_pre.sum() >= MIN_REMAIN_POSE_NUM or ik_success_pre.all():
-                            break
-                target_gripper_poses_pass_ik = target_gripper_poses_pass_ik[ik_success_pre]
-                ik_joint_positions = ik_joint_positions[ik_success_pre]
-                ik_joint_names = ik_joint_names[ik_success_pre]
-                ik_jacobian_score = ik_jacobian_score[ik_success_pre]
-                ik_link_poses = ik_link_poses[ik_success_pre]
-                pre_insert_gripper_pose = pre_insert_gripper_pose[ik_success_pre]
-                pre_insert_pose_canonical = pre_insert_pose_canonical[ik_success_pre]
+                if not skip_pre_place_ik_filter:
+                    ik_success_pre, ik_info_pre = robot.solve_ik(
+                        pre_insert_gripper_pose,
+                        ee_type="gripper",
+                        type="AvoidObs",
+                        arm=arm,
+                        output_link_pose=False,
+                    )
+                    # if noise makes the pre insert pose not reachable, try another noise or finally discard noise
+                    if (
+                        not ik_success_pre.all()
+                        and "pre_pose_noise" in self.extra_params
+                        and ik_success_pre.sum() < MIN_REMAIN_POSE_NUM
+                    ):
+                        for try_time in range(MAX_TRY_TIMES):
+                            logger.info(f"try {try_time} times to add noise to pre insert pose")
+                            if try_time == MAX_TRY_TIMES - 1:
+                                logger.error("try to add noise to pre insert pose failed, use original pose")
+                                position_noise = 0
+                                rotation_noise = 0
+                            pre_insert_pose_canonical = add_noise(
+                                np.where(~ik_success_pre)[0],
+                                pre_insert_pose_canonical,
+                                origin_pre_insert_pose_canonical,
+                                position_noise,
+                                rotation_noise,
+                            )
+                            pre_insert_obj_pose = anchor_pose[np.newaxis, ...] @ pre_insert_pose_canonical
+                            pre_insert_gripper_pose = pre_insert_obj_pose @ gripper2obj[np.newaxis, ...]
+                            ik_success_pre, ik_info_pre = robot.solve_ik(
+                                pre_insert_gripper_pose,
+                                ee_type="gripper",
+                                type="AvoidObs",
+                                arm=arm,
+                                output_link_pose=False,
+                            )
+                            if ik_success_pre.sum() >= MIN_REMAIN_POSE_NUM or ik_success_pre.all():
+                                break
+                    target_gripper_poses_pass_ik = target_gripper_poses_pass_ik[ik_success_pre]
+                    ik_joint_positions = ik_joint_positions[ik_success_pre]
+                    ik_joint_names = ik_joint_names[ik_success_pre]
+                    ik_jacobian_score = ik_jacobian_score[ik_success_pre]
+                    ik_link_poses = ik_link_poses[ik_success_pre]
+                    pre_insert_gripper_pose = pre_insert_gripper_pose[ik_success_pre]
+                    pre_insert_pose_canonical = pre_insert_pose_canonical[ik_success_pre]
             if len(target_gripper_poses_pass_ik) == 0:
                 logger.warning(f"{self.action_type}: No target_obj_pose can pass curobo IK")
                 continue
-            if "G2" in robot.robot_cfg:
+            if skip_pose_ik_filter:
+                idx_sorted = np.arange(len(target_gripper_poses_pass_ik))
+            elif "G2" in robot.robot_cfg:
                 elbow_name = "arm_r_link4" if arm == "right" else "arm_l_link4"
                 hand_name = "gripper_r_center_link" if arm == "right" else "gripper_l_center_link"
                 idx_sorted = sorted_by_position_humanlike(
