@@ -29,6 +29,9 @@ class BasePolicy:
         """Called at the beginning of an episode."""
         pass
 
+    def set_episode_idx(self, idx):
+        pass
+
     def set_robot(self, robot, cam_dict):
         pass
 

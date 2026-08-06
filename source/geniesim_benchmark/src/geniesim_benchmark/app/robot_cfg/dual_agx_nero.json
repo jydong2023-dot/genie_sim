@@ -1,0 +1,85 @@
+{
+  "camera": {
+    "/dual_agx_nero/head_front_Camera": [
+      640,
+      400,
+      30
+    ],
+    "/dual_agx_nero/left_gripper_base/Left_Camera": [
+      640,
+      400,
+      30
+    ],
+    "/dual_agx_nero/right_gripper_base/Right_Camera": [
+      640,
+      400,
+      30
+    ]
+  },
+  "closed_positions": {
+    "left": [
+      0.0
+    ],
+    "right": [
+      0.0
+    ]
+  },
+  "gripper": {
+    "closed_velocities": {
+      "left": [
+        -0.04
+      ],
+      "right": [
+        -0.04
+      ]
+    },
+    "end_effector_name": {
+      "left": "left_gripper_base",
+      "right": "right_gripper_base"
+    },
+    "end_effector_prim_path": {
+      "left": "/dual_agx_nero/left_gripper_base",
+      "right": "/dual_agx_nero/right_gripper_base"
+    },
+    "finger_names": {
+      "left": [
+        "left_gripper_joint1",
+        "left_gripper_joint2"
+      ],
+      "right": [
+        "right_gripper_joint1",
+        "right_gripper_joint2"
+      ]
+    },
+    "gripper_control_joint": {
+      "left": "/dual_agx_nero/joints/left_gripper",
+      "right": "/dual_agx_nero/joints/right_gripper"
+    },
+    "gripper_name": {
+      "left": "agx_nero_gripper",
+      "right": "agx_nero_gripper"
+    },
+    "gripper_type": "linear",
+    "max_force": -1,
+    "opened_positions": {
+      "left": [
+        0.1
+      ],
+      "right": [
+        0.1
+      ]
+    }
+  },
+  "robot": {
+    "arm": "dual",
+    "base_prim_path": "/dual_agx_nero",
+    "dof_nums": 20,
+    "initial_position": [],
+    "joint_delta_time": 0.01,
+    "lock_joints": [],
+    "robot_generation": "dual_agx_nero",
+    "robot_name": "dual_agx_nero",
+    "robot_usd": "robot/DualAgxNero/dual_agx_nero.usd",
+    "urdf_name": ""
+  }
+}

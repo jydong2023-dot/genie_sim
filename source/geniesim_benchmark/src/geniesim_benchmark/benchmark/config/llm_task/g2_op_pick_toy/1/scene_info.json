@@ -1,0 +1,71 @@
+{
+  "layout": {
+    "blue_block": {
+      "description": {
+        "color": "blue",
+        "descriptive_terms": [
+          "blue",
+          "plastic",
+          "block"
+        ],
+        "dimensions": [
+          0.091028,
+          0.091995,
+          0.061508
+        ],
+        "full_description": [
+          "A small blue block on the table."
+        ],
+        "materials": [
+          "plastic"
+        ],
+        "object_category": [
+          "toy",
+          "building_block"
+        ],
+        "semantic_name": [
+          "block"
+        ],
+        "shape": "rectangular block",
+        "unit": "m"
+      },
+      "keywords": [
+        "blue_block",
+        "blue",
+        "block",
+        "on_table"
+      ],
+      "tags": [
+        "olalab_home_toy_scene",
+        "blue_block"
+      ],
+      "usd": "home_toy_scene.usd",
+      "xyz": [
+        0.029867,
+        -0.286511,
+        0.751435
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.83627,
+        0.548317
+      ]
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "graph": {},
+      "links": [],
+      "multigraph": false,
+      "nodes": [
+        {
+          "id": "blue_block"
+        }
+      ]
+    }
+  },
+  "scene_id": "olalab_home_toy_scene",
+  "seed": 20260806
+}

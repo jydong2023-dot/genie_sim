@@ -27,6 +27,9 @@ simulation_app = app_launcher.app
 
 import carb
 import omni
+from geniesim_benchmark.plugins.logger import Logger
+
+logger = Logger()
 
 # Workaround for omni.replicator.core 1.12.27 (TODO marked "real fix in kit 109"):
 # annotator_utils._resize_data_for_overscan() reads /rtx/dataWindowNDC/{0..3}
@@ -51,6 +54,12 @@ _last_time = time.time()
 from isaacsim.core.utils import extensions
 
 extensions.enable_extension("isaacsim.ros2.bridge")
+if getattr(cfg.app, "enable_physics_inspector", False) or getattr(cfg.app, "show_physics_inspector", False):
+    extensions.enable_extension("omni.physx.supportui")
+    logger.info("Enabled omni.physx.supportui for Physics Inspector")
+if getattr(cfg.app, "show_physics_inspector", False):
+    _carb_settings.set_bool("/physics/supportUiPhysicsInspector/enabled", True)
+    logger.info("Requested Physics Inspector window")
 
 
 def wait_rclpy(timeout=10, tick=0.1):
@@ -78,9 +87,6 @@ from geniesim_benchmark.app.controllers import APICore
 from geniesim_benchmark.app.task_manager import TaskManager
 from geniesim_benchmark.app.workflow.ui_builder import UIBuilder
 from geniesim_benchmark.benchmark.render_profile import format_frame_profile
-from geniesim_benchmark.plugins.logger import Logger
-
-logger = Logger()
 
 
 def main():
@@ -122,6 +128,8 @@ def main():
 
     step = 0
     render_frame_idx = 0
+    keep_open_after_benchmark = bool(getattr(cfg.benchmark, "keep_open", False))
+    benchmark_completion_handled = False
     try:
         while simulation_app.is_running():
             render_enabled = task_manager.api_core.frame_render_enabled
@@ -146,6 +154,14 @@ def main():
 
             if task_manager.api_core.exit:
                 task_manager.api_core.post_process()
+                if keep_open_after_benchmark and not benchmark_completion_handled:
+                    task_manager.join(timeout=10)
+                    task_manager.api_core.exit = False
+                    benchmark_completion_handled = True
+                    logger.info(
+                        "Benchmark finished; keeping Isaac Sim open because benchmark.keep_open=true"
+                    )
+                    continue
                 break
 
             if not ui_builder.my_world.is_playing():

@@ -1,0 +1,433 @@
+{
+  "generated_instance_ids": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "generator": "g2_op_pick_toy_blue_block_pose",
+  "generator_version": 1,
+  "geometry": {
+    "baseline_world_xyz": [
+      0.037945286378560095,
+      -0.28144968194311065,
+      0.7514354661348929
+    ],
+    "baseline_world_yaw_deg": -85.00000133014908,
+    "obstacles": [
+      {
+        "bounds": {
+          "max_x": 0.026065748970538073,
+          "max_y": 0.14718988244751124,
+          "min_x": -0.14006865218408132,
+          "min_y": -0.01857615595199473
+        },
+        "prim_path": "/World/toyscene/Objects/yellow_push_toy"
+      },
+      {
+        "bounds": {
+          "max_x": -0.20984710207815455,
+          "max_y": 0.20241124611295447,
+          "min_x": -0.3907850271602305,
+          "min_y": 0.023378745584485147
+        },
+        "prim_path": "/World/toyscene/Objects/blue_push_toy"
+      },
+      {
+        "bounds": {
+          "max_x": 0.0928183654410279,
+          "max_y": -0.05024302733859227,
+          "min_x": -0.047051864193188686,
+          "min_y": -0.19357799896978092
+        },
+        "prim_path": "/World/toyscene/Objects/orange"
+      },
+      {
+        "bounds": {
+          "max_x": 0.07205943870158914,
+          "max_y": 0.5987066340755066,
+          "min_x": -0.2955263832715662,
+          "min_y": 0.23232084583400509
+        },
+        "prim_path": "/World/toyscene/Objects/white_container"
+      },
+      {
+        "bounds": {
+          "max_x": -0.16805918435286404,
+          "max_y": -0.03178815163623409,
+          "min_x": -0.2754804804467901,
+          "min_y": -0.13275327208393226
+        },
+        "prim_path": "/World/toyscene/Objects/stacked_block_1"
+      },
+      {
+        "bounds": {
+          "max_x": -0.191570314148315,
+          "max_y": -0.22289384670626144,
+          "min_x": -0.30669365752044886,
+          "min_y": -0.2974423918066693
+        },
+        "prim_path": "/World/toyscene/Objects/stacked_block_2"
+      },
+      {
+        "bounds": {
+          "max_x": -0.12032629506144145,
+          "max_y": -0.3832545859590521,
+          "min_x": -0.33287784878234766,
+          "min_y": -0.5530322938125617
+        },
+        "prim_path": "/World/toyscene/Objects/blue_basket"
+      }
+    ],
+    "parent_world_xyz": [
+      -0.6440293795104888,
+      -0.007652927960912927,
+      0.7514652027390124
+    ],
+    "parent_world_yaw_deg": -85.00000133014908,
+    "support_bounds": {
+      "max_x": 0.4121096755186504,
+      "max_y": 0.6620558246401245,
+      "min_x": -0.540823834793566,
+      "min_y": -0.7860726947252756
+    },
+    "target_parent_path": "/World/toyscene/Objects",
+    "target_planar_radius": 0.06470919091607237,
+    "target_prim_path": "/World/toyscene/Objects/blue_block"
+  },
+  "profile": {
+    "ignore_collision_prim_paths": [
+      "/World/toyscene/Objects/table"
+    ],
+    "max_sampling_attempts": 1000,
+    "min_clearance_m": 0.01,
+    "min_planar_offset_m": 0.005,
+    "source_background_usd": "background/olalab/home_toy_scene_pick_toy.usda",
+    "support_prim_path": "/World/toyscene/Objects/table",
+    "target_prim_path": "/World/toyscene/Objects/blue_block",
+    "variant_asset_dir": "background/olalab/g2_op_pick_toy_pose_variants",
+    "x_offset_range_m": [
+      -0.03,
+      0.03
+    ],
+    "y_offset_range_m": [
+      -0.03,
+      0.03
+    ],
+    "yaw_offset_range_deg": [
+      -30.0,
+      30.0
+    ]
+  },
+  "root_seed": 20260805,
+  "source_background_usd": "background/olalab/home_toy_scene_pick_toy.usda",
+  "source_instance": "/home/user/djy/genie_sim/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/g2_op_pick_toy/0",
+  "variants": [
+    {
+      "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/1.usda",
+      "dimension": "object_pose",
+      "generator": "g2_op_pick_toy_blue_block_pose",
+      "generator_version": 1,
+      "instance_id": 1,
+      "light_config": {},
+      "parameters": {
+        "local_xyz": [
+          0.3365306074887588,
+          0.6470283739249442,
+          -2.9736604119534604e-05
+        ],
+        "local_yaw_deg": -28.496687739325438,
+        "min_obstacle_clearance_m": 0.02822352213755587,
+        "target_planar_radius_m": 0.06470919091607237,
+        "target_prim_path": "/World/toyscene/Objects/blue_block",
+        "world_xyz": [
+          0.029867424687649986,
+          -0.28651071202340916,
+          0.7514354661348929
+        ],
+        "world_yaw_deg": -113.49668906947451,
+        "x_offset_m": -0.008077861690910109,
+        "y_offset_m": -0.005061030080298522,
+        "yaw_offset_deg": -28.49668773932544
+      },
+      "scenario_seed": 20260806,
+      "split": "pose_randomization"
+    },
+    {
+      "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/2.usda",
+      "dimension": "object_pose",
+      "generator": "g2_op_pick_toy_blue_block_pose",
+      "generator_version": 1,
+      "instance_id": 2,
+      "light_config": {},
+      "parameters": {
+        "local_xyz": [
+          0.3339456589194522,
+          0.6287180146147064,
+          -2.9736604119534604e-05
+        ],
+        "local_yaw_deg": -1.43203975741676,
+        "min_obstacle_clearance_m": 0.02724426261493658,
+        "target_planar_radius_m": 0.06470919091607237,
+        "target_prim_path": "/World/toyscene/Objects/blue_block",
+        "world_xyz": [
+          0.011401448732847874,
+          -0.2855314525007899,
+          0.7514354661348929
+        ],
+        "world_yaw_deg": -86.43204108756585,
+        "x_offset_m": -0.02654383764571222,
+        "y_offset_m": -0.004081770557679207,
+        "yaw_offset_deg": -1.4320397574167743
+      },
+      "scenario_seed": 20260807,
+      "split": "pose_randomization"
+    },
+    {
+      "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/3.usda",
+      "dimension": "object_pose",
+      "generator": "g2_op_pick_toy_blue_block_pose",
+      "generator_version": 1,
+      "instance_id": 3,
+      "light_config": {},
+      "parameters": {
+        "local_xyz": [
+          0.3607935027070991,
+          0.6614736680327697,
+          -2.9736604119534604e-05
+        ],
+        "local_yaw_deg": -9.352227248060785,
+        "min_obstacle_clearance_m": 0.051135099760417094,
+        "target_planar_radius_m": 0.06470919091607237,
+        "target_prim_path": "/World/toyscene/Objects/blue_block",
+        "world_xyz": [
+          0.04637240021230156,
+          -0.3094222896462704,
+          0.7514354661348929
+        ],
+        "world_yaw_deg": -94.35222857820985,
+        "x_offset_m": 0.008427113833741465,
+        "y_offset_m": -0.027972607703159742,
+        "yaw_offset_deg": -9.352227248060771
+      },
+      "scenario_seed": 20260808,
+      "split": "pose_randomization"
+    },
+    {
+      "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/4.usda",
+      "dimension": "object_pose",
+      "generator": "g2_op_pick_toy_blue_block_pose",
+      "generator_version": 1,
+      "instance_id": 4,
+      "light_config": {},
+      "parameters": {
+        "local_xyz": [
+          0.33719910478721776,
+          0.6303804189175782,
+          -2.9736604119534604e-05
+        ],
+        "local_yaw_deg": -24.11084287120883,
+        "min_obstacle_clearance_m": 0.030340440102198954,
+        "target_planar_radius_m": 0.06470919091607237,
+        "target_prim_path": "/World/toyscene/Objects/blue_block",
+        "world_xyz": [
+          0.013341083504668942,
+          -0.28862762998805225,
+          0.7514354661348929
+        ],
+        "world_yaw_deg": -109.11084420135792,
+        "x_offset_m": -0.024604202873891153,
+        "y_offset_m": -0.007177948044941568,
+        "yaw_offset_deg": -24.110842871208845
+      },
+      "scenario_seed": 20260809,
+      "split": "pose_randomization"
+    },
+    {
+      "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/5.usda",
+      "dimension": "object_pose",
+      "generator": "g2_op_pick_toy_blue_block_pose",
+      "generator_version": 1,
+      "instance_id": 5,
+      "light_config": {},
+      "parameters": {
+        "local_xyz": [
+          0.3582441794295236,
+          0.642574257861419,
+          -2.9736604119534604e-05
+        ],
+        "local_yaw_deg": -29.728026475600927,
+        "min_obstacle_clearance_m": 0.05024266911630372,
+        "target_planar_radius_m": 0.06470919091607237,
+        "target_prim_path": "/World/toyscene/Objects/blue_block",
+        "world_xyz": [
+          0.027322719859497878,
+          -0.308529859002157,
+          0.7514354661348929
+        ],
+        "world_yaw_deg": -114.72802780575,
+        "x_offset_m": -0.010622566519062217,
+        "y_offset_m": -0.02708017705904636,
+        "yaw_offset_deg": -29.728026475600927
+      },
+      "scenario_seed": 20260810,
+      "split": "pose_randomization"
+    },
+    {
+      "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/6.usda",
+      "dimension": "object_pose",
+      "generator": "g2_op_pick_toy_blue_block_pose",
+      "generator_version": 1,
+      "instance_id": 6,
+      "light_config": {},
+      "parameters": {
+        "local_xyz": [
+          0.35293738238536143,
+          0.6257150982070725,
+          -2.9736604119534604e-05
+        ],
+        "local_yaw_deg": -20.605219764374255,
+        "min_obstacle_clearance_m": 0.04642543821819463,
+        "target_planar_radius_m": 0.06470919091607237,
+        "target_prim_path": "/World/toyscene/Objects/blue_block",
+        "world_xyz": [
+          0.010065196648179443,
+          -0.3047126281040479,
+          0.7514354661348929
+        ],
+        "world_yaw_deg": -105.60522109452333,
+        "x_offset_m": -0.027880089730380652,
+        "y_offset_m": -0.023262946160937287,
+        "yaw_offset_deg": -20.605219764374247
+      },
+      "scenario_seed": 20260811,
+      "split": "pose_randomization"
+    },
+    {
+      "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/7.usda",
+      "dimension": "object_pose",
+      "generator": "g2_op_pick_toy_blue_block_pose",
+      "generator_version": 1,
+      "instance_id": 7,
+      "light_config": {},
+      "parameters": {
+        "local_xyz": [
+          0.34142697438535263,
+          0.6277931116854463,
+          -2.9736604119534604e-05
+        ],
+        "local_yaw_deg": 15.402500771855358,
+        "min_obstacle_clearance_m": 0.03477772001233455,
+        "target_planar_radius_m": 0.06470919091607237,
+        "target_prim_path": "/World/toyscene/Objects/blue_block",
+        "world_xyz": [
+          0.011132104769736726,
+          -0.29306490989818784,
+          0.7514354661348929
+        ],
+        "world_yaw_deg": -69.59750055829372,
+        "x_offset_m": -0.02681318160882337,
+        "y_offset_m": -0.011615227955077186,
+        "yaw_offset_deg": 15.402500771855358
+      },
+      "scenario_seed": 20260812,
+      "split": "pose_randomization"
+    },
+    {
+      "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/8.usda",
+      "dimension": "object_pose",
+      "generator": "g2_op_pick_toy_blue_block_pose",
+      "generator_version": 1,
+      "instance_id": 8,
+      "light_config": {},
+      "parameters": {
+        "local_xyz": [
+          0.3480301688848008,
+          0.6837037606064206,
+          -2.9736604119534604e-05
+        ],
+        "local_yaw_deg": 23.55435566106803,
+        "min_obstacle_clearance_m": 0.03648285453535634,
+        "target_planar_radius_m": 0.06470919091607237,
+        "target_prim_path": "/World/toyscene/Objects/blue_block",
+        "world_xyz": [
+          0.06740550307320137,
+          -0.29477004442120963,
+          0.7514354661348929
+        ],
+        "world_yaw_deg": -61.44564566908103,
+        "x_offset_m": 0.029460216694641266,
+        "y_offset_m": -0.013320362478098969,
+        "yaw_offset_deg": 23.554355661068044
+      },
+      "scenario_seed": 20260813,
+      "split": "pose_randomization"
+    },
+    {
+      "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/9.usda",
+      "dimension": "object_pose",
+      "generator": "g2_op_pick_toy_blue_block_pose",
+      "generator_version": 1,
+      "instance_id": 9,
+      "light_config": {},
+      "parameters": {
+        "local_xyz": [
+          0.3593065561847864,
+          0.6616379818705049,
+          -2.9736604119534604e-05
+        ],
+        "local_yaw_deg": 5.068599626190803,
+        "min_obstacle_clearance_m": 0.04963949062476315,
+        "target_planar_radius_m": 0.06470919091607237,
+        "target_prim_path": "/World/toyscene/Objects/blue_block",
+        "world_xyz": [
+          0.046406492892419465,
+          -0.30792668051061645,
+          0.7514354661348929
+        ],
+        "world_yaw_deg": -79.93140170395827,
+        "x_offset_m": 0.00846120651385937,
+        "y_offset_m": -0.026476998567505804,
+        "yaw_offset_deg": 5.06859962619081
+      },
+      "scenario_seed": 20260814,
+      "split": "pose_randomization"
+    },
+    {
+      "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/10.usda",
+      "dimension": "object_pose",
+      "generator": "g2_op_pick_toy_blue_block_pose",
+      "generator_version": 1,
+      "instance_id": 10,
+      "light_config": {},
+      "parameters": {
+        "local_xyz": [
+          0.3252622231121479,
+          0.6705154059460456,
+          -2.9736604119534604e-05
+        ],
+        "local_yaw_deg": 3.0366967658146677,
+        "min_obstacle_clearance_m": 0.014950988165167003,
+        "target_planar_radius_m": 0.06470919091607237,
+        "target_prim_path": "/World/toyscene/Objects/blue_block",
+        "world_xyz": [
+          0.05228297735920096,
+          -0.2732381780510203,
+          0.7514354661348929
+        ],
+        "world_yaw_deg": -81.96330456433442,
+        "x_offset_m": 0.014337690980640867,
+        "y_offset_m": 0.008211503892090334,
+        "yaw_offset_deg": 3.0366967658146535
+      },
+      "scenario_seed": 20260815,
+      "split": "pose_randomization"
+    }
+  ]
+}

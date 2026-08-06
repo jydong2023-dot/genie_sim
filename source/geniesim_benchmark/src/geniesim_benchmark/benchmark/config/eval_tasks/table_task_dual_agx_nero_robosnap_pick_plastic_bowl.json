@@ -1,0 +1,90 @@
+{
+  "generalization": {
+    "material": {
+      "enable": false,
+      "num": 0
+    }
+  },
+  "objects": {
+    "constraints": null,
+    "extra_objects": [],
+    "fix_objects": [],
+    "task_related_objects": []
+  },
+  "problem_instance": 0,
+  "recording_setting": {
+    "camera_list": [
+      "/dual_agx_nero/head_front_Camera",
+      "/dual_agx_nero/left_gripper_base/Left_Camera",
+      "/dual_agx_nero/right_gripper_base/Right_Camera"
+    ],
+    "fps": 30,
+    "num_of_episode": 1
+  },
+  "robot": {
+    "arm": "dual",
+    "robot_cfg": "dual_agx_nero.json",
+    "robot_id": "dual_agx_nero",
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          -0.71,
+          0.0,
+          0.0
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "scene": {
+    "function_space_objects": {
+      "workspace_00": {
+        "material_obj_prim": {},
+        "position": [
+          0.0,
+          0.0,
+          0.75
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "scene_id": "robosnap/auto_usd/pick_plastic_bowl/workspace_00",
+    "scene_info_dir": "/background/robosnap/auto_usd/",
+    "scene_usd": "/background/robosnap/auto_usd/pick_plastic_bowl.usd"
+  },
+  "stages": [
+    {
+      "action": "pick",
+      "active": {
+        "object_id": "gripper",
+        "primitive": null
+      },
+      "extra_params": {
+        "pick_up_direction": "x",
+        "pick_up_distance": 0.12
+      },
+      "passive": {
+        "object_id": "",
+        "primitive": null
+      }
+    }
+  ],
+  "task": "table_task_1_g2_op",
+  "task_subtype": "debug",
+  "task_type": "robosnap_pick_plastic_bowl_debug"
+}

@@ -1,0 +1,49 @@
+{
+  "instruction_category": "pick_multiple_toys",
+  "instructions": [
+    {
+      "gripper": {
+        "1": {
+          "handover": false,
+          "side": "right"
+        }
+      },
+      "id": 1,
+      "instruction": "Use the right arm to pick up the blue block on the table",
+      "target": {
+        "id1": "blue_block"
+      },
+      "template_key": "pick_multiple_toys"
+    },
+    {
+      "gripper": {
+        "1": {
+          "handover": false,
+          "side": "left"
+        }
+      },
+      "id": 2,
+      "instruction": "Use the left arm to pick up the stacked block on the table",
+      "target": {
+        "id1": "stacked_block_1"
+      },
+      "template_key": "pick_multiple_toys"
+    },
+    {
+      "gripper": {
+        "1": {
+          "handover": false,
+          "side": "left"
+        }
+      },
+      "id": 3,
+      "instruction": "Use the left arm to pick up the yellow plush toy on the table",
+      "target": {
+        "id1": "yellow_push_toy"
+      },
+      "template_key": "pick_multiple_toys"
+    }
+  ],
+  "scene_id": "olalab_home_toy_scene",
+  "task_id": "pick_multiple_toys"
+}

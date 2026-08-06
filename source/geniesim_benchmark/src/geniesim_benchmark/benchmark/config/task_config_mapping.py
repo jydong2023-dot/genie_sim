@@ -26,6 +26,18 @@ TASK_MAPPING = {
         },
         "eval_dims": {"manip": "open", "cognition": "semantic"},
     },
+    "g2_op_pick_toy": {
+        "background": {
+            "G2": "g2_op_pick_toy",
+        },
+        "eval_dims": {"manip": "pick", "cognition": "semantic"},
+    },
+    "pick_multiple_toys": {
+        "background": {
+            "G2": "pick_multiple_toys",
+        },
+        "eval_dims": {"manip": "pick", "cognition": "semantic"},
+    },
     "pack_in_supermarket": {
         "background": {
             "G1": "table_task_g1_op",

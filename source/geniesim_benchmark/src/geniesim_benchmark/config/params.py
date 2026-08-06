@@ -111,6 +111,8 @@ class AppConfig:
     enable_playback: bool = False
     enable_pub_depth_camera: bool = False
     on_demand_render: bool = False
+    enable_physics_inspector: bool = False
+    show_physics_inspector: bool = False
 
 
 @dataclass
@@ -128,6 +130,10 @@ class BenchmarkConfig:
     interactive: bool = False
     seed: int = 1
     preview: bool = False
+    keep_open: bool = False
+    fake_policy_max_steps: int = 90
+    fake_policy_amplitude: float = 0.08
+    scripted_policy_save_observation_images: bool = True
     enable_vec: int = 0
     shared_cam_render_frames: int = 8
     shared_cam_first_render_frames: int = 8

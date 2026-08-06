@@ -1,0 +1,14 @@
+app:
+  enable_rate_limit: true
+  enable_ros: false
+benchmark:
+  task_name: g2_op_pick_toy
+  platform: g2_op
+  sub_task_name: g2_op_pick_toy
+  seed: 20260805
+  model_arc: corobot
+  num_episode: 1
+  num_instances: 10
+  instance_ids: "1,2,3,4,5,6,7,8,9,10"
+  preview: false
+  record: false

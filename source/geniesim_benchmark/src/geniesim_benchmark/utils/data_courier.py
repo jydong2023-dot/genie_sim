@@ -103,14 +103,18 @@ class DataCourier:
 
     _G1_CAM_DIRS = {"head": "head_camera", "left_hand": "left_camera", "right_hand": "right_camera"}
     _G2_CAM_DIRS = {"head": "head_front_camera", "left_hand": "left_camera", "right_hand": "right_camera"}
+    _DUAL_AGX_NERO_CAM_DIRS = {"head": "head_front_camera", "left_hand": "left_camera", "right_hand": "right_camera"}
     _G2_CFGS = {"G2_omnipicker", "G2_90d_gp", "G2_90d", "G2_crsB_omnipicker"}
     _G1_CFGS = {"G1_omnipicker", "G1_120s"}
+    _DUAL_AGX_NERO_CFGS = {"dual_agx_nero"}
 
     def _camera_dirs(self):
         if self.robot_cfg in self._G1_CFGS:
             return self._G1_CAM_DIRS
         if self.robot_cfg in self._G2_CFGS:
             return self._G2_CAM_DIRS
+        if self.robot_cfg in self._DUAL_AGX_NERO_CFGS:
+            return self._DUAL_AGX_NERO_CAM_DIRS
         raise ValueError(f"Invalid robot cfg: {self.robot_cfg}")
 
     def get_observation_image(self):

@@ -1,0 +1,13 @@
+app:
+  enable_rate_limit: true
+  enable_ros: false
+benchmark:
+  task_name: pick_multiple_toys
+  platform: g2_op
+  sub_task_name: pick_multiple_toys
+  seed: 1
+  model_arc: corobot
+  num_episode: 1
+  num_instances: 1
+  preview: false
+  record: false

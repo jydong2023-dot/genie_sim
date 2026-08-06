@@ -75,6 +75,45 @@ Use `--list-objects` before writing a profile for a complex scene. See the
 [scenario augmentation guide](scripts/README_SCENARIO_AUGMENTATION.md) and
 [example profile](scripts/scenario_augmentation.example.json).
 
+For `g2_op_pick_toy`, `blue_block` is part of the background USD instead of the
+task's `/Workspace` layer. Generate its collision-checked XY + yaw variants with
+the existing OpenUSD bindings in the `geniesim` environment:
+
+```bash
+conda run -n geniesim python \
+  scripts/generate_g2_op_pick_toy_pose_variants.py \
+  --count 10 \
+  --seed 20260805
+```
+
+This preserves baseline instance `0`, writes task instances `1-10`, and writes
+their background wrappers under
+`geniesim_assets/background/olalab/g2_op_pick_toy_pose_variants/`. Run only the
+randomized instances with:
+
+```bash
+geniesim benchmark run g2op_robust_g2_op_pick_toy_posegen.yaml
+```
+
+### Adapt an existing USD scene for benchmark debugging
+
+Generate a runnable benchmark YAML and eval-task JSON from a USD already stored
+under `geniesim_assets`. This loads the scene, robot, and configured cameras; it
+does not invent target-object physics or success scoring:
+
+```bash
+GENIESIM_ASSETS_ROOT=/path/to/geniesim_assets
+python scripts/adapt_usd_scene.py \
+  --scene-usd "$GENIESIM_ASSETS_ROOT/background/robosnap/auto_usd/pick_plastic_bowl.usd" \
+  --robot-id dual_agx_nero \
+  --robot-cfg dual_agx_nero.json
+```
+
+Run the same script inside the GenieSim container with the mounted scene path
+`/geniesim_assets/...`. Use `--dry-run` to inspect both documents and `--force`
+only when an existing generated pair should be replaced. The command prints the
+exact `geniesim benchmark run ...` command after writing the files.
+
 ### Convert collected datasets between formats
 
 The benchmark stack ships dataset utilities under

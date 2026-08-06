@@ -47,6 +47,8 @@ TASK_STEPS = {
     "pick_block_shape": ["Follow", "PickUpOnGripper"],
     "pick_block_size": ["Follow", "PickUpOnGripper"],
     "pick_common_sense": ["Follow", "PickUpOnGripper"],
+    "g2_op_pick_toy": ["Follow", "PickUpOnGripper"],
+    "pick_multiple_toys": ["Follow", "PickUpOnGripper"],
     "pick_object_type": ["Follow", "PickUpOnGripper"],
     "pick_specific_object": ["Follow", "PickUpOnGripper"],
     "place_object_into_box_color": ["Follow", "PickUpOnGripper", "Inside"],

@@ -1,0 +1,33 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "/World/toyscene/Objects/blue_block|[0.1,0.2,0.1]|right_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "/World/toyscene/Objects/blue_block|right_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "g2_op_pick_toy"
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "layout": {
+    "blue_block": {
+      "description": {
+        "color": "blue",
+        "descriptive_terms": [
+          "blue",
+          "plastic",
+          "block"
+        ],
+        "dimensions": [
+          0.091028,
+          0.091995,
+          0.061508
+        ],
+        "full_description": [
+          "A small blue block on the table."
+        ],
+        "materials": [
+          "plastic"
+        ],
+        "object_category": [
+          "toy",
+          "building_block"
+        ],
+        "semantic_name": [
+          "block"
+        ],
+        "shape": "rectangular block",
+        "unit": "m"
+      },
+      "keywords": [
+        "blue_block",
+        "blue",
+        "block",
+        "on_table"
+      ],
+      "tags": [
+        "olalab_home_toy_scene",
+        "blue_block"
+      ],
+      "usd": "home_toy_scene_pick_toy.usda",
+      "xyz": [
+        0.037945,
+        -0.28145,
+        0.751435
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.67559,
+        0.737277
+      ]
+    },
+    "stacked_block_1": {
+      "description": {
+        "color": "multicolor",
+        "descriptive_terms": [
+          "stacked",
+          "wooden",
+          "block"
+        ],
+        "dimensions": [
+          0.107421,
+          0.100965,
+          0.061723
+        ],
+        "full_description": [
+          "A stacked toy block on the table."
+        ],
+        "materials": [
+          "wood"
+        ],
+        "object_category": [
+          "toy",
+          "building_block"
+        ],
+        "semantic_name": [
+          "stacked block"
+        ],
+        "shape": "block",
+        "unit": "m"
+      },
+      "keywords": [
+        "stacked_block_1",
+        "stacked",
+        "block",
+        "on_table"
+      ],
+      "tags": [
+        "olalab_home_toy_scene",
+        "stacked_block_1"
+      ],
+      "usd": "home_toy_scene_pick_toy.usda",
+      "xyz": [
+        -0.22177,
+        -0.082271,
+        0.751232
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.67559,
+        0.737277
+      ]
+    },
+    "yellow_push_toy": {
+      "description": {
+        "color": "yellow",
+        "descriptive_terms": [
+          "yellow",
+          "plush",
+          "toy"
+        ],
+        "dimensions": [
+          0.166134,
+          0.165766,
+          0.114624
+        ],
+        "full_description": [
+          "A yellow plush toy on the table."
+        ],
+        "materials": [
+          "fabric"
+        ],
+        "object_category": [
+          "toy",
+          "plush toy"
+        ],
+        "semantic_name": [
+          "yellow plush toy"
+        ],
+        "shape": "character toy",
+        "unit": "m"
+      },
+      "keywords": [
+        "yellow_push_toy",
+        "yellow",
+        "plush",
+        "toy",
+        "on_table"
+      ],
+      "tags": [
+        "olalab_home_toy_scene",
+        "yellow_push_toy"
+      ],
+      "usd": "home_toy_scene_pick_toy.usda",
+      "xyz": [
+        -0.057001,
+        0.064307,
+        0.735737
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.67559,
+        0.737277
+      ]
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "graph": {},
+      "links": [],
+      "multigraph": false,
+      "nodes": [
+        {
+          "id": "blue_block"
+        },
+        {
+          "id": "stacked_block_1"
+        },
+        {
+          "id": "yellow_push_toy"
+        }
+      ]
+    }
+  },
+  "scene_id": "olalab_home_toy_scene"
+}

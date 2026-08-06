@@ -102,7 +102,10 @@ class TaskBenchmark(object):
         return tasks
 
     def config_task(self):
-        if self.args.model_arc == "corobot":
+        if self.args.model_arc == "corobot" or self.args.policy_class in (
+            "FakeJointAbsPolicy",
+            "ScriptedJointAbsPolicy",
+        ):
             self.task_mode = "infer"
         else:
             self.task_mode = "empty"
@@ -386,11 +389,30 @@ class TaskBenchmark(object):
         if self.policy is not None:
             self.policy.reset()
             return
-        host, port = self._parse_infer_host(self.args.infer_host)
-        logger.info(f"Infer service address: {host}" + (f":{port}" if port is not None else ""))
-        if self.args.model_arc == "corobot":
+        if self.args.policy_class == "FakeJointAbsPolicy":
+            from geniesim_benchmark.benchmark.policy.fake_joint_abs_policy import FakeJointAbsPolicy
+
+            self.policy = FakeJointAbsPolicy(
+                task_name=self.args.task_name,
+                sub_task_name=self.args.sub_task_name,
+                robot_cfg=self.task_config.get("robot_cfg", ""),
+                max_steps=getattr(self.args, "fake_policy_max_steps", 90),
+                amplitude=getattr(self.args, "fake_policy_amplitude", 0.08),
+            )
+        elif self.args.policy_class == "ScriptedJointAbsPolicy":
+            from geniesim_benchmark.benchmark.policy.scripted_joint_abs_policy import ScriptedJointAbsPolicy
+
+            self.policy = ScriptedJointAbsPolicy(
+                task_name=self.args.task_name,
+                sub_task_name=self.args.sub_task_name,
+                robot_cfg=self.task_config.get("robot_cfg", ""),
+                save_observation_images=getattr(self.args, "scripted_policy_save_observation_images", True),
+            )
+        elif self.args.model_arc == "corobot":
             from geniesim_benchmark.benchmark.policy.corobotpolicy import CoRobotPolicy
 
+            host, port = self._parse_infer_host(self.args.infer_host)
+            logger.info(f"Infer service address: {host}" + (f":{port}" if port is not None else ""))
             self.policy = CoRobotPolicy(
                 task_name=self.args.task_name,
                 host_ip=host,
@@ -455,7 +477,7 @@ class TaskBenchmark(object):
         if self.args.sub_task_name == "":
             scene_info = self.gen_layouts(mode="instance")
 
-        if self.args.model_arc == "corobot":
+        if self.args.model_arc == "corobot" or self.args.env_class == "PiEnv":
             from geniesim_benchmark.benchmark.envs.pi_env import PiEnv
 
             self.env = PiEnv(self.api_core, episode_file, self.task_config)

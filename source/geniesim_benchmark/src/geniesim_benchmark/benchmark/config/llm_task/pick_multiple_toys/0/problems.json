@@ -1,0 +1,95 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "/World/toyscene/Objects/blue_block|[0.1,0.2,0.1]|right_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "/World/toyscene/Objects/blue_block|right_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "pick_multiple_toys"
+  },
+  "problem2": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "/World/toyscene/Objects/stacked_block_1|[0.1,0.2,0.1]|left_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "/World/toyscene/Objects/stacked_block_1|left_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "pick_multiple_toys"
+  },
+  "problem3": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "/World/toyscene/Objects/yellow_push_toy|[0.1,0.2,0.1]|left_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "/World/toyscene/Objects/yellow_push_toy|left_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "pick_multiple_toys"
+  }
+}

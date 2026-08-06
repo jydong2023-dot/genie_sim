@@ -1,0 +1,15 @@
+{
+  "target_prim_path": "/World/toyscene/Objects/blue_block",
+  "source_background_usd": "background/olalab/home_toy_scene_pick_toy.usda",
+  "variant_asset_dir": "background/olalab/g2_op_pick_toy_pose_variants",
+  "x_offset_range_m": [-0.03, 0.03],
+  "y_offset_range_m": [-0.03, 0.03],
+  "yaw_offset_range_deg": [-30.0, 30.0],
+  "min_clearance_m": 0.01,
+  "min_planar_offset_m": 0.005,
+  "support_prim_path": "/World/toyscene/Objects/table",
+  "ignore_collision_prim_paths": [
+    "/World/toyscene/Objects/table"
+  ],
+  "max_sampling_attempts": 1000
+}

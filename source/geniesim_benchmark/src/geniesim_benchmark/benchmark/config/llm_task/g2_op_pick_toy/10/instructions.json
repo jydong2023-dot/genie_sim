@@ -1,0 +1,21 @@
+{
+  "instruction_category": "g2_op_pick_toy",
+  "instructions": [
+    {
+      "gripper": {
+        "1": {
+          "handover": false,
+          "side": "right"
+        }
+      },
+      "id": 1,
+      "instruction": "Use the right arm to pick up the blue block on the table",
+      "target": {
+        "idn": "blue_block"
+      },
+      "template_key": "g2_op_pick_toy"
+    }
+  ],
+  "scene_id": "olalab_home_toy_scene",
+  "task_id": "g2_op_pick_toy"
+}

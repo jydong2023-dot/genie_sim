@@ -1,0 +1,16 @@
+app:
+  enable_rate_limit: true
+  enable_ros: false
+benchmark:
+  task_name: table_task_dual_agx_nero_robosnap
+  platform: dual_agx_nero
+  sub_task_name: ""
+  seed: 1
+  model_arc: pi
+  policy_class: DemoPolicy
+  env_class: DummyEnv
+  num_episode: 1
+  num_instances: 1
+  preview: true
+  record: false
+  keep_open: true

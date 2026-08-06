@@ -1,0 +1,14 @@
+app:
+  enable_rate_limit: true
+  enable_ros: false
+benchmark:
+  task_name: table_task_dual_agx_nero
+  platform: dual_agx_nero
+  sub_task_name: pick_block_color
+  seed: 1
+  model_arc: scripted_joint_abs
+  policy_class: ScriptedJointAbsPolicy
+  env_class: PiEnv
+  num_episode: 1
+  scripted_policy_save_observation_images: true
+  record: false

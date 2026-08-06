@@ -1,0 +1,30 @@
+{
+  "background_usd": "background/olalab/g2_op_pick_toy_pose_variants/6.usda",
+  "dimension": "object_pose",
+  "generator": "g2_op_pick_toy_blue_block_pose",
+  "generator_version": 1,
+  "instance_id": 6,
+  "light_config": {},
+  "parameters": {
+    "local_xyz": [
+      0.35293738238536143,
+      0.6257150982070725,
+      -2.9736604119534604e-05
+    ],
+    "local_yaw_deg": -20.605219764374255,
+    "min_obstacle_clearance_m": 0.04642543821819463,
+    "target_planar_radius_m": 0.06470919091607237,
+    "target_prim_path": "/World/toyscene/Objects/blue_block",
+    "world_xyz": [
+      0.010065196648179443,
+      -0.3047126281040479,
+      0.7514354661348929
+    ],
+    "world_yaw_deg": -105.60522109452333,
+    "x_offset_m": -0.027880089730380652,
+    "y_offset_m": -0.023262946160937287,
+    "yaw_offset_deg": -20.605219764374247
+  },
+  "scenario_seed": 20260811,
+  "split": "pose_randomization"
+}

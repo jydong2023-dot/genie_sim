@@ -50,21 +50,43 @@ DUAL_FRANKA_FR3_DEFAULT_STATES = {
     "head_state": [],
     "init_arm": [
         0.0,
-        -0.785,
+        -0.67,
         0.0,
-        -2.356,
-        0.0,
-        1.571,
-        0.785,
-        0.0,
-        -0.785,
-        0.0,
-        -2.356,
+        2.1,
         0.0,
         1.571,
-        -0.785,
+        0.0,
+        0.0,
+        0.67,
+        0.0,
+        2.1,
+        0.0,
+        1.571,
+        0.0,
     ],
     "init_hand": [0.04, 0.04],
+}
+
+DUAL_AGX_NERO_DEFAULT_STATES = {
+    "body_state": [],
+    "head_state": [],
+    "init_arm": [
+        0,
+        -0.61,
+        0.0,
+        -1.0,
+        0.0,
+        -0.7,
+        -0.61,
+        0,
+        -0.61,
+        0.0,
+        -1.0,
+        0.0,
+        0.7,
+        -0.61,
+    ],
+    "init_hand": [0.1, 0.1],
 }
 
 G2_90D_DEFAULT_STATES = {
@@ -266,6 +288,16 @@ G1_STATES_1 = {
 }
 
 TASK_INFO_DICT = {
+    "": {
+        "dual_franka_fr3": DUAL_FRANKA_FR3_DEFAULT_STATES,
+        "dual_agx_nero": DUAL_AGX_NERO_DEFAULT_STATES,
+    },
+    "g2_op_pick_toy": {
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "pick_multiple_toys": {
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
     "pick_billiards_color": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G1_120s": G1_DEFAULT_STATES,
@@ -280,6 +312,7 @@ TASK_INFO_DICT = {
         "G2_90d": G2_90D_DEFAULT_STATES,
         "G2_crsB_omnipicker": G2_CRSB_DEFAULT_STATES,
         "dual_franka_fr3": DUAL_FRANKA_FR3_DEFAULT_STATES,
+        "dual_agx_nero": DUAL_AGX_NERO_DEFAULT_STATES,
     },
     "pick_block_shape": {
         "G1_omnipicker": G1_DEFAULT_STATES,

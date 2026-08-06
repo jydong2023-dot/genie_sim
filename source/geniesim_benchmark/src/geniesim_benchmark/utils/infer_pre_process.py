@@ -24,7 +24,7 @@ class TaskInfo:
         ):
             self._head_init_position = self._task_config["head_state"]
             self._waist_init_position = self._task_config["body_state"]
-        elif "dual_franka_fr3" == robot_cfg:
+        elif "dual_franka_fr3" == robot_cfg or "dual_agx_nero" == robot_cfg:
             self._head_init_position = self._task_config.get("head_state", [])
             self._waist_init_position = self._task_config.get("body_state", [])
         else:

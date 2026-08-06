@@ -154,6 +154,35 @@ DUAL_FRANKA_FR3_GRIPPER_JOINT_NAMES = [
     "right_fr3_finger_joint1",
 ]
 
+DUAL_AGX_NERO_LEFT_ARM_JOINT_NAMES = [
+    "left_joint1",
+    "left_joint2",
+    "left_joint3",
+    "left_joint4",
+    "left_joint5",
+    "left_joint6",
+    "left_joint7",
+]
+
+DUAL_AGX_NERO_RIGHT_ARM_JOINT_NAMES = [
+    "right_joint1",
+    "right_joint2",
+    "right_joint3",
+    "right_joint4",
+    "right_joint5",
+    "right_joint6",
+    "right_joint7",
+]
+
+DUAL_AGX_NERO_DUAL_ARM_JOINT_NAMES = (
+    DUAL_AGX_NERO_LEFT_ARM_JOINT_NAMES + DUAL_AGX_NERO_RIGHT_ARM_JOINT_NAMES
+)
+
+DUAL_AGX_NERO_GRIPPER_JOINT_NAMES = [
+    "left_gripper",
+    "right_gripper",
+]
+
 G1_CHASSIS = [
     "base_linear_joint_x",
     "base_linear_joint_y",
@@ -261,6 +290,21 @@ ROBOT_CONFIGS = {
         "obs_extra_joints": [],
         "init_gripper_open": [0.04, 0.04],
     },
+    "dual_agx_nero": {
+        "robot_type": "dual_agx_nero",
+        "arm_joints": DUAL_AGX_NERO_DUAL_ARM_JOINT_NAMES,
+        "left_arm_joints": DUAL_AGX_NERO_LEFT_ARM_JOINT_NAMES,
+        "right_arm_joints": DUAL_AGX_NERO_RIGHT_ARM_JOINT_NAMES,
+        "gripper_joints": DUAL_AGX_NERO_GRIPPER_JOINT_NAMES,
+        "waist_joints": [],
+        "head_joints": [],
+        "gripper_offset": 0.0,
+        "limit_val": 0.1,
+        "label_state": label_state_passthrough,
+        "process_gripper_action": process_gripper_action_passthrough,
+        "obs_extra_joints": [],
+        "init_gripper_open": [0.1, 0.1],
+    },
 }
 
 DEFAULT_ROBOT_CONFIG = {
@@ -287,5 +331,7 @@ def robot_type_mapping(robot_type):
         return "G2_crsB_omnipicker"
     elif "dual_franka_fr3" in robot_type:
         return "dual_franka_fr3"
+    elif "dual_agx_nero" in robot_type:
+        return "dual_agx_nero"
     else:
         raise ValueError(f"Invalid robot type: {robot_type}")
