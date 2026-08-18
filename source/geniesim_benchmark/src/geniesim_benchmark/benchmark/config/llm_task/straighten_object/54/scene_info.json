@@ -1,0 +1,299 @@
+{
+  "layout": {
+    "data_collection_table": {
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "full_description": [
+          "A white rectangular table with a smooth marble-patterned top and two white C-shaped legs ending in black caps, viewed from multiple angles revealing both dual-leg and single-central-support configurations."
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "shape": "rectangular",
+        "color": "white",
+        "dimensions": [
+          0.6,
+          1.0,
+          0.73
+        ],
+        "unit": "m"
+      },
+      "keywords": [
+        "table",
+        "white",
+        "furniture",
+        "center"
+      ],
+      "tags": [
+        "root_scene_dc_54",
+        "straighten_object_dc_54",
+        "data_collection_table"
+      ],
+      "usd": "benchmark_table_019",
+      "xyz": [
+        0.01,
+        0.0,
+        0.3609
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "geniesim_2025_target_grasp_object": {
+      "description": {
+        "semantic_name": [
+          "can"
+        ],
+        "object_category": [
+          "container",
+          "beverage can"
+        ],
+        "color": "orange",
+        "shape": "cylindrical",
+        "materials": [
+          "aluminum",
+          "plastic",
+          "printed label"
+        ],
+        "dimensions": [
+          0.06648768615722657,
+          0.1158542938232422,
+          0.06647872543334961
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "orange",
+          "metallic",
+          "printed",
+          "beverage"
+        ],
+        "full_description": [
+          "An orange aluminum soda can with a silver top and bottom, featuring the Fanta logo and branding."
+        ]
+      },
+      "keywords": [
+        "fanta",
+        "container",
+        "beverage can",
+        "right"
+      ],
+      "tags": [
+        "root_scene_dc_54",
+        "straighten_object_dc_54",
+        "geniesim_2025_target_grasp_object"
+      ],
+      "usd": "benchmark_beverage_bottle_003",
+      "xyz": [
+        -0.02,
+        -0.05,
+        0.853239
+      ],
+      "xyzw": [
+        -0.651604,
+        -0.274614,
+        0.274614,
+        0.651604
+      ]
+    },
+    "geniesim_2025_beverage_bottle_001_iros": {
+      "description": {
+        "semantic_name": [
+          "Sprite can"
+        ],
+        "object_category": [
+          "container",
+          "beverage"
+        ],
+        "color": "green",
+        "shape": "cylindrical",
+        "materials": [
+          "metal",
+          "plastic"
+        ],
+        "dimensions": [
+          0.05535351671278477,
+          0.14131903648376465,
+          0.055531058460474014
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "green",
+          "metallic",
+          "printed",
+          "packaged"
+        ],
+        "full_description": [
+          "A green aluminum soda can with white Chinese characters and a silver pull-tab top."
+        ]
+      },
+      "keywords": [
+        "sprite",
+        "container",
+        "beverage",
+        "left"
+      ],
+      "tags": [
+        "root_scene_dc_54",
+        "straighten_object_dc_54",
+        "geniesim_2025_beverage_bottle_001_iros"
+      ],
+      "usd": "iros_beverage_bottle_001",
+      "xyz": [
+        -0.02,
+        0.32,
+        0.847766
+      ],
+      "xyzw": [
+        0.316911,
+        -0.632114,
+        0.632114,
+        -0.316911
+      ]
+    },
+    "geniesim_2025_orange_004": {
+      "description": {
+        "semantic_name": [
+          "orange"
+        ],
+        "object_category": [
+          "food",
+          "fruit"
+        ],
+        "color": "orange",
+        "shape": "spherical",
+        "materials": [
+          "organic",
+          "fruit flesh",
+          "peel"
+        ],
+        "dimensions": [
+          0.0740404799580574,
+          0.07486499100923538,
+          0.07437027990818024
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "smooth",
+          "vibrant",
+          "juicy",
+          "fresh"
+        ],
+        "full_description": [
+          "A round, orange-colored fruit with a textured peel and small dimples visible on its surface."
+        ]
+      },
+      "keywords": [
+        "orange",
+        "food",
+        "fruit",
+        "right"
+      ],
+      "tags": [
+        "root_scene_dc_54",
+        "straighten_object_dc_54",
+        "geniesim_2025_orange_004"
+      ],
+      "usd": "benchmark_orange_004",
+      "xyz": [
+        -0.01,
+        -0.32,
+        0.857432
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.372975,
+        0.927841
+      ]
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "links": [
+        {
+          "source": "root_scene_dc_54",
+          "target": "straighten_object_dc_54"
+        },
+        {
+          "source": "straighten_object_dc_54",
+          "target": "data_collection_table"
+        },
+        {
+          "source": "straighten_object_dc_54",
+          "target": "geniesim_2025_target_grasp_object"
+        },
+        {
+          "source": "straighten_object_dc_54",
+          "target": "geniesim_2025_beverage_bottle_001_iros"
+        },
+        {
+          "source": "straighten_object_dc_54",
+          "target": "geniesim_2025_orange_004"
+        }
+      ],
+      "multigraph": false,
+      "nodes": [
+        {
+          "id": "root_scene_dc_54"
+        },
+        {
+          "id": "straighten_object_dc_54"
+        },
+        {
+          "id": "data_collection_table",
+          "tags": [
+            "table",
+            "white",
+            "furniture",
+            "center"
+          ]
+        },
+        {
+          "id": "geniesim_2025_target_grasp_object",
+          "tags": [
+            "fanta",
+            "container",
+            "beverage can",
+            "right"
+          ]
+        },
+        {
+          "id": "geniesim_2025_beverage_bottle_001_iros",
+          "tags": [
+            "sprite",
+            "container",
+            "beverage",
+            "left"
+          ]
+        },
+        {
+          "id": "geniesim_2025_orange_004",
+          "tags": [
+            "orange",
+            "food",
+            "fruit",
+            "right"
+          ]
+        }
+      ]
+    }
+  },
+  "scene_id": "straighten_object",
+  "source": {
+    "format": "data_collection_saved_task",
+    "file": "/home/user/djy/genie_sim/source/data_collection/saved_task/straighten_and_place_beverage_g2/straighten_and_place_beverage_g2_4.json"
+  }
+}

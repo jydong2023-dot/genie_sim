@@ -6,6 +6,10 @@
 
 set -eo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DATA_COLLECTION_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+source "${SCRIPT_DIR}/isaac_sim_runtime.sh"
+
 # Default values
 HEADLESS=false
 RECORD=true
@@ -49,7 +53,7 @@ echo "=========================================="
 echo "Executing entry_point.sh setup..."
 echo "=========================================="
 
-ENTRY_POINT_SCRIPT="/geniesim/main/data_collection/scripts/entry_point.sh"
+ENTRY_POINT_SCRIPT="${SCRIPT_DIR}/entry_point.sh"
 if [ -f "$ENTRY_POINT_SCRIPT" ]; then
     # Source entry_point.sh but skip the exec at the end
     # We'll execute it in a subshell and capture the environment setup
@@ -68,7 +72,7 @@ if [ -f "$ENTRY_POINT_SCRIPT" ]; then
     export ROS_DISTRO=jazzy
     export ISAACSIM_HOME=/isaac-sim
     export CUROBO_PATH=/tmp/curobo
-    export SIM_REPO_ROOT=/geniesim/main/data_collection
+    export SIM_REPO_ROOT="${SIM_REPO_ROOT:-${DATA_COLLECTION_ROOT}}"
 
     # user 1234 access
     sudo setfacl -m u:1234:rwX /isaac-sim/.cache 2>/dev/null || true
@@ -79,8 +83,8 @@ if [ -f "$ENTRY_POINT_SCRIPT" ]; then
     sudo setfacl -m u:1234:rwX /isaac-sim/.local/share/ov/pkg 2>/dev/null || true
 
     # bashrc configuration (entry_point.sh should have done this, but ensure it's done)
-    if ! grep -q "export SIM_REPO_ROOT=/geniesim/main/data_collection" ~/.bashrc 2>/dev/null; then
-        echo "export SIM_REPO_ROOT=/geniesim/main/data_collection" >>~/.bashrc
+    if ! grep -q "export SIM_REPO_ROOT=${SIM_REPO_ROOT}" ~/.bashrc 2>/dev/null; then
+        echo "export SIM_REPO_ROOT=${SIM_REPO_ROOT}" >>~/.bashrc
     fi
     if ! grep -q "export SIM_ASSETS=" ~/.bashrc 2>/dev/null; then
         echo "export SIM_ASSETS=/geniesim_assets" >>~/.bashrc
@@ -145,7 +149,7 @@ else
     export ROS_DISTRO=jazzy
     export ISAACSIM_HOME=/isaac-sim
     export CUROBO_PATH=/tmp/curobo
-    export SIM_REPO_ROOT=/geniesim/main/data_collection
+    export SIM_REPO_ROOT="${SIM_REPO_ROOT:-${DATA_COLLECTION_ROOT}}"
 fi
 
 echo ""
@@ -154,7 +158,7 @@ echo "Setting up environment variables directly..."
 export ROS_DISTRO=jazzy
 export ISAACSIM_HOME=/isaac-sim
 export CUROBO_PATH=/tmp/curobo
-export SIM_REPO_ROOT=/geniesim/main/data_collection
+export SIM_REPO_ROOT="${SIM_REPO_ROOT:-${DATA_COLLECTION_ROOT}}"
 export SIM_ASSETS=/geniesim_assets
 export ENABLE_SIM=1
 export ROS_VERSION=2
@@ -163,29 +167,15 @@ export ROS_LOCALHOST_ONLY=1
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 export ROS_CMD_DISTRO=jazzy
 
-# Set up LD_LIBRARY_PATH
-ROS_BRIDGE_LIB="${ISAACSIM_HOME}/exts/isaacsim.ros2.bridge/${ROS_DISTRO}/lib"
-if [ -z "$LD_LIBRARY_PATH" ]; then
-    export LD_LIBRARY_PATH="${ROS_BRIDGE_LIB}"
-else
-    # Only add if not already present
-    if [[ ":$LD_LIBRARY_PATH:" != *":${ROS_BRIDGE_LIB}:"* ]]; then
-        export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${ROS_BRIDGE_LIB}"
-    fi
-fi
-
-# Source ROS environment if available
-if [ -f "${ISAACSIM_HOME}/setup_ros_env.sh" ]; then
-    source "${ISAACSIM_HOME}/setup_ros_env.sh" 2>/dev/null || true
-fi
-
-# Put IsaacSim's bundled rclpy (built for its own Python) on the path so the
-# server imports it instead of the system ROS one.
-ROS_BRIDGE_RCLPY="${ISAACSIM_HOME}/exts/isaacsim.ros2.bridge/${ROS_DISTRO}/rclpy"
-if [ -d "${ROS_BRIDGE_RCLPY}" ]; then
-    export PYTHONPATH="${ROS_BRIDGE_RCLPY}:${PYTHONPATH:-}"
-    export LD_LIBRARY_PATH="${ROS_BRIDGE_LIB}:${LD_LIBRARY_PATH}"
-fi
+# Set up the Isaac Sim ROS bridge, keeping host ROS Python 3.12 packages out
+# of the Isaac Sim Python 3.11 process.
+prepare_isaac_sim_ros_env
+prepare_isaac_sim_cache
+ensure_isaac_sim_python_package ruckig 'ruckig==0.12.2'
+require_isaac_sim_python_package \
+    curobo \
+    curobo \
+    'from curobo.cuda_robot_model.cuda_robot_model import CudaRobotModel'
 
 # Verify critical environment variables
 echo ""
@@ -200,7 +190,7 @@ echo ""
 
 # Set up paths
 ISAACSIM_PYTHON="${ISAACSIM_HOME}/python.sh"
-WORK_DIR="/geniesim/main/data_collection"
+WORK_DIR="${SIM_REPO_ROOT:-${DATA_COLLECTION_ROOT}}"
 
 # Use LOG_DIR from environment if set, otherwise use default
 if [ -n "$LOG_DIR" ]; then

@@ -303,6 +303,10 @@ Category totals:
 See [README_LAYOUT_PREVIEW.md](README_LAYOUT_PREVIEW.md) for the complete
 Docker environment and two-terminal commands.
 
+To generate `saved_task` JSON files, convert them into benchmark `llm_task`
+instances, and open the converted scene in Isaac Sim, see
+[README_SAVED_TASK_TO_BENCHMARK.md](README_SAVED_TASK_TO_BENCHMARK.md).
+
 ### Docker - Automated Data Collection
 
 ```bash

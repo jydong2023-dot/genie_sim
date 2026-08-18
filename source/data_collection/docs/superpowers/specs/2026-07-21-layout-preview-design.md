@@ -40,7 +40,7 @@ Host generation writes absolute `$SIM_ASSETS/...` paths. The Isaac server joins
 
 ## Entry
 
-`scripts/preview_layout.py`
+`scripts/generate_layout.py`
 
 ## How to start the Isaac server
 
@@ -90,12 +90,12 @@ export SIM_ASSETS=/home/user/djy/geniesim_assets   # host path if client on host
 export PYTHONPATH=$PWD:$PYTHONPATH
 
 # GUI
-python scripts/preview_layout.py --gui \
+python scripts/generate_layout.py --gui \
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
   --output-dir /home/user/djy/genie_sim/output --num-episodes 2
 
 # Headless + PNGs under output/<task>/preview/
-python scripts/preview_layout.py --headless --save-images \
+python scripts/generate_layout.py --headless --save-images \
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
   --output-dir /home/user/djy/genie_sim/output --num-episodes 2
 ```

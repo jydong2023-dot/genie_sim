@@ -1,0 +1,298 @@
+{
+  "layout": {
+    "data_collection_table": {
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "full_description": [
+          "A white rectangular table with a smooth marble-patterned top and two white C-shaped legs ending in black caps, viewed from multiple angles revealing both dual-leg and single-central-support configurations."
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "shape": "rectangular",
+        "color": "white",
+        "dimensions": [
+          0.6,
+          1.0,
+          0.73
+        ],
+        "unit": "m"
+      },
+      "keywords": [
+        "table",
+        "white",
+        "furniture",
+        "center"
+      ],
+      "tags": [
+        "root_scene_dc_50",
+        "straighten_object_dc_50",
+        "data_collection_table"
+      ],
+      "usd": "benchmark_table_019",
+      "xyz": [
+        0.01,
+        0.0,
+        0.3609
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "geniesim_2025_target_grasp_object": {
+      "description": {
+        "semantic_name": [
+          "can"
+        ],
+        "object_category": [
+          "container",
+          "beverage can"
+        ],
+        "color": "orange",
+        "shape": "cylindrical",
+        "materials": [
+          "aluminum",
+          "plastic",
+          "printed label"
+        ],
+        "dimensions": [
+          0.06648768615722657,
+          0.1158542938232422,
+          0.06647872543334961
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "orange",
+          "metallic",
+          "printed",
+          "beverage"
+        ],
+        "full_description": [
+          "An orange aluminum soda can with a silver top and bottom, featuring the Fanta logo and branding."
+        ]
+      },
+      "keywords": [
+        "fanta",
+        "container",
+        "beverage can",
+        "left"
+      ],
+      "tags": [
+        "root_scene_dc_50",
+        "straighten_object_dc_50",
+        "geniesim_2025_target_grasp_object"
+      ],
+      "usd": "benchmark_beverage_bottle_003",
+      "xyz": [
+        0.01,
+        0.01,
+        0.853239
+      ],
+      "xyzw": [
+        -0.613385,
+        0.351794,
+        -0.351794,
+        0.613385
+      ]
+    },
+    "geniesim_2025_beverage_bottle_004": {
+      "description": {
+        "semantic_name": [
+          "beverage_bottle"
+        ],
+        "object_category": [
+          "container",
+          "beverage"
+        ],
+        "color": "red",
+        "shape": "cylindrical",
+        "materials": [
+          "plastic",
+          "liquid"
+        ],
+        "dimensions": [
+          0.06153380125761032,
+          0.14993929862976074,
+          0.06153379566967487
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "red",
+          "liquid",
+          "bottled",
+          "packaged"
+        ],
+        "full_description": [
+          "A plastic bottle with a red label and black cap, containing dark liquid, featuring Chinese text and a Suntory logo."
+        ]
+      },
+      "keywords": [
+        "oolong tea beverage",
+        "container",
+        "beverage",
+        "right"
+      ],
+      "tags": [
+        "root_scene_dc_50",
+        "straighten_object_dc_50",
+        "geniesim_2025_beverage_bottle_004"
+      ],
+      "usd": "benchmark_beverage_bottle_004",
+      "xyz": [
+        -0.03,
+        -0.35,
+        0.850767
+      ],
+      "xyzw": [
+        0.493815,
+        -0.506109,
+        0.506109,
+        -0.493815
+      ]
+    },
+    "geniesim_2025_lemon_030": {
+      "description": {
+        "semantic_name": [
+          "lemon"
+        ],
+        "object_category": [
+          "food",
+          "citrus fruit"
+        ],
+        "color": "yellow",
+        "shape": "irregular",
+        "materials": [
+          "fruit flesh",
+          "peel"
+        ],
+        "dimensions": [
+          0.0652875304222107,
+          0.08429359644651413,
+          0.06925402581691742
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "citrus",
+          "yellow",
+          "organic",
+          "fresh",
+          "juicy"
+        ],
+        "full_description": [
+          "A bright yellow, glossy, oval-shaped fruit with a small green stem nub."
+        ]
+      },
+      "keywords": [
+        "lemon",
+        "food",
+        "citrus fruit",
+        "left"
+      ],
+      "tags": [
+        "root_scene_dc_50",
+        "straighten_object_dc_50",
+        "geniesim_2025_lemon_030"
+      ],
+      "usd": "benchmark_lemon_030",
+      "xyz": [
+        0.0,
+        0.25,
+        0.862147
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.497311,
+        0.867573
+      ]
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "links": [
+        {
+          "source": "root_scene_dc_50",
+          "target": "straighten_object_dc_50"
+        },
+        {
+          "source": "straighten_object_dc_50",
+          "target": "data_collection_table"
+        },
+        {
+          "source": "straighten_object_dc_50",
+          "target": "geniesim_2025_target_grasp_object"
+        },
+        {
+          "source": "straighten_object_dc_50",
+          "target": "geniesim_2025_beverage_bottle_004"
+        },
+        {
+          "source": "straighten_object_dc_50",
+          "target": "geniesim_2025_lemon_030"
+        }
+      ],
+      "multigraph": false,
+      "nodes": [
+        {
+          "id": "root_scene_dc_50"
+        },
+        {
+          "id": "straighten_object_dc_50"
+        },
+        {
+          "id": "data_collection_table",
+          "tags": [
+            "table",
+            "white",
+            "furniture",
+            "center"
+          ]
+        },
+        {
+          "id": "geniesim_2025_target_grasp_object",
+          "tags": [
+            "fanta",
+            "container",
+            "beverage can",
+            "left"
+          ]
+        },
+        {
+          "id": "geniesim_2025_beverage_bottle_004",
+          "tags": [
+            "oolong tea beverage",
+            "container",
+            "beverage",
+            "right"
+          ]
+        },
+        {
+          "id": "geniesim_2025_lemon_030",
+          "tags": [
+            "lemon",
+            "food",
+            "citrus fruit",
+            "left"
+          ]
+        }
+      ]
+    }
+  },
+  "scene_id": "straighten_object",
+  "source": {
+    "format": "data_collection_saved_task",
+    "file": "/home/user/djy/genie_sim/source/data_collection/saved_task/straighten_and_place_beverage_g2/straighten_and_place_beverage_g2_0.json"
+  }
+}

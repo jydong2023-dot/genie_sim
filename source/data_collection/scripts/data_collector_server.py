@@ -4,10 +4,61 @@
 
 import argparse
 import os
+import subprocess
 import sys
 
 root_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root_directory)
+
+
+def _prepare_isaac_sim_ros_environment():
+    """Keep system ROS Python 3.12 paths out of Isaac Sim Python 3.11."""
+
+    ready_variable = "GENIESIM_ISAAC_ROS_ENV_READY"
+
+    def filter_paths(value):
+        return os.pathsep.join(
+            path for path in (value or "").split(os.pathsep) if path and not path.startswith("/opt/ros/")
+        )
+
+    updated_env = os.environ.copy()
+    updated_env["ROS_DISTRO"] = updated_env.get("ROS_DISTRO", "jazzy")
+    updated_env["PYTHONPATH"] = filter_paths(updated_env.get("PYTHONPATH"))
+    updated_env["LD_LIBRARY_PATH"] = filter_paths(updated_env.get("LD_LIBRARY_PATH"))
+    for variable in ("AMENT_PREFIX_PATH", "COLCON_PREFIX_PATH", "CMAKE_PREFIX_PATH"):
+        updated_env.pop(variable, None)
+
+    isaacsim_home = updated_env.get("ISAACSIM_HOME", "/isaac-sim")
+    distro = updated_env["ROS_DISTRO"]
+    bridge_root = os.path.join(isaacsim_home, "exts", "isaacsim.ros2.bridge", distro)
+    bridge_rclpy = os.path.join(bridge_root, "rclpy")
+    bridge_lib = os.path.join(bridge_root, "lib")
+    if os.path.isdir(bridge_rclpy):
+        updated_env["PYTHONPATH"] = os.pathsep.join(
+            path for path in (bridge_rclpy, updated_env.get("PYTHONPATH", "")) if path
+        )
+
+    library_paths = [bridge_lib]
+    internal_ros_lib = os.path.join(os.path.sep, distro, "lib")
+    if os.path.isdir(internal_ros_lib):
+        library_paths.append(internal_ros_lib)
+    library_paths.append(updated_env.get("LD_LIBRARY_PATH", ""))
+    updated_env["LD_LIBRARY_PATH"] = os.pathsep.join(path for path in library_paths if path)
+
+    if updated_env.get(ready_variable) != "1" and any(
+        updated_env.get(key) != os.environ.get(key)
+        for key in ("PYTHONPATH", "LD_LIBRARY_PATH", "ROS_DISTRO")
+    ):
+        updated_env[ready_variable] = "1"
+        os.execvpe(sys.executable, [sys.executable, *sys.argv], updated_env)
+
+    os.environ.clear()
+    os.environ.update(updated_env)
+    if os.path.isdir(bridge_rclpy) and bridge_rclpy not in sys.path:
+        sys.path.insert(0, bridge_rclpy)
+
+
+_prepare_isaac_sim_ros_environment()
 
 from common.base_utils.isaac_numpy_runtime import reexec_with_isaacsim_numpy_libs
 
@@ -48,6 +99,32 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
+
+
+def _require_runtime_dependency(package_name, import_statement):
+    result = subprocess.run(
+        [sys.executable, "-c", import_statement],
+        capture_output=True,
+        env=os.environ,
+        text=True,
+    )
+    if result.returncode == 0:
+        return
+
+    details = result.stderr.strip().splitlines()
+    reason = details[-1] if details else "import failed"
+    parser.error(
+        f"Isaac Sim Python cannot import {package_name}: {reason}. "
+        "Run data collection with registry.agibot.com/genie-sim/"
+        "geniesim3-data-collection:latest."
+    )
+
+
+_require_runtime_dependency("ruckig", "import ruckig")
+_require_runtime_dependency(
+    "curobo",
+    "from curobo.cuda_robot_model.cuda_robot_model import CudaRobotModel",
+)
 
 from isaacsim import SimulationApp
 

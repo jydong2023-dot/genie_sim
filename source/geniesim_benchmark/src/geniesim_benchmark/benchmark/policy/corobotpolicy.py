@@ -43,12 +43,14 @@ class CoRobotPolicy(BasePolicy):
         sub_task_name="",
         debug=False,
         preview=False,
+        preview_instruction_overlay=True,
         robot_cfg="",
     ):
         super().__init__(task_name=task_name, sub_task_name=sub_task_name)
         self.ts_str = time.strftime("%Y%m%d_%H%M", time.localtime(time.time()))
         self.initialized = False
         self.preview = preview
+        self.preview_instruction_overlay = preview_instruction_overlay
         self.debug = debug
         self._ws_uri = f"ws://{host_ip}:{port}" if port is not None else f"ws://{host_ip}"
         self._ws = None
@@ -234,17 +236,24 @@ class CoRobotPolicy(BasePolicy):
             ts = int(time.time() * 1000)
             debug_dir = os.path.join(ROOT_DIR, "debug_preview")
             os.makedirs(debug_dir, exist_ok=True)
+
+            def preview_image(camera_name):
+                image = obs["images"][camera_name]
+                if self.preview_instruction_overlay:
+                    image = annotate_instruction(image, task_instruction)
+                return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
             cv2.imwrite(
                 os.path.join(debug_dir, f"preview_{self.infer_cnt:04d}_{ts}_head.png"),
-                cv2.cvtColor(annotate_instruction(obs["images"]["head"], task_instruction), cv2.COLOR_RGB2BGR),
+                preview_image("head"),
             )
             cv2.imwrite(
                 os.path.join(debug_dir, f"preview_{self.infer_cnt:04d}_{ts}_left_hand.png"),
-                cv2.cvtColor(annotate_instruction(obs["images"]["left_hand"], task_instruction), cv2.COLOR_RGB2BGR),
+                preview_image("left_hand"),
             )
             cv2.imwrite(
                 os.path.join(debug_dir, f"preview_{self.infer_cnt:04d}_{ts}_right_hand.png"),
-                cv2.cvtColor(annotate_instruction(obs["images"]["right_hand"], task_instruction), cv2.COLOR_RGB2BGR),
+                preview_image("right_hand"),
             )
             logger.info(f"[Preview] Saved images to {debug_dir}/preview_{self.infer_cnt:04d}_{ts}_*.png")
             self.infer_cnt += 1

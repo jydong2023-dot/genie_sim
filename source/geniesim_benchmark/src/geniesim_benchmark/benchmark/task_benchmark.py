@@ -419,6 +419,7 @@ class TaskBenchmark(object):
                 port=port,
                 sub_task_name=self.args.sub_task_name,
                 preview=self.args.preview,
+                preview_instruction_overlay=getattr(self.args, "preview_instruction_overlay", True),
                 robot_cfg=self.task_config.get("robot_cfg", ""),
             )
         elif self.args.policy_class == "DemoPolicy":
@@ -662,6 +663,7 @@ class TaskBenchmark(object):
             port=port,
             sub_task_name=sub_task_name,
             preview=self.args.preview,
+            preview_instruction_overlay=getattr(self.args, "preview_instruction_overlay", True),
             robot_cfg=self.task_config.get("robot_cfg", ""),
         )
         return policy

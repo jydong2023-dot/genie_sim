@@ -1,0 +1,73 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Xform "Objects"
+    {
+        def Xform "data_collection_table" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.01, 0, 0.2609)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+        }
+
+        def Xform "geniesim_2025_target_grasp_object" (
+            prepend payload = @/geniesim_assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_003/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.651603568062, -0.651603568062, -0.274613892747, 0.274613892747)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.02, -0.05, 0.853239362761)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.05
+            }
+        }
+
+        def Xform "geniesim_2025_beverage_bottle_001_iros" (
+            prepend payload = @/geniesim_assets/objects/iros/beverage_bottle/iros_beverage_bottle_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.3169108067, 0.3169108067, -0.632113550398, 0.632113550398)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.02, 0.32, 0.84776552923)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.05
+            }
+        }
+
+        def Xform "geniesim_2025_orange_004" (
+            prepend payload = @/geniesim_assets/objects/benchmark/orange/benchmark_orange_004/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.927841315082, 0, 0, 0.37297519224)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.01, -0.32, 0.857432495505)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.05
+            }
+        }
+
+    }
+}

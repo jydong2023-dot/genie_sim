@@ -18,6 +18,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -136,6 +137,7 @@ def build_preview_command(
     task_output_dir: Path,
     num_instances: int = 1,
     instance_ids: Iterable[int] = (),
+    instruction_overlay: bool = True,
 ) -> list[str]:
     """Command that launches one fast, headless preview run."""
     exact_ids = tuple(int(value) for value in instance_ids)
@@ -150,8 +152,11 @@ def build_preview_command(
         f"--benchmark.num_instances={num_instances}",
         "--benchmark.enable_vec=0",
         "--benchmark.record=false",
+        "--benchmark.keep_open=false",
         f"--benchmark.output_dir={task_output_dir}",
     ]
+    if not instruction_overlay:
+        command.append("--benchmark.preview_instruction_overlay=false")
     if exact_ids:
         command.append(
             "--benchmark.instance_ids=" + ",".join(str(value) for value in exact_ids)
@@ -208,12 +213,19 @@ def archive_new_preview_images(
     before: set[Path],
     task_dir: Path,
     instance_ids: Iterable[int] = (),
+    cameras: Iterable[str] = CAMERA_SUFFIXES.values(),
+    single_image_name: str | None = None,
 ) -> dict[str, str]:
     """Move newly-created preview images into ``task_dir`` with stable names."""
     task_dir.mkdir(parents=True, exist_ok=True)
     after = snapshot_preview_images(debug_dir)
     new_files = sorted(after - before, key=lambda p: p.stat().st_mtime_ns)
     archived: dict[str, str] = {}
+    selected_cameras = frozenset(cameras)
+    for src in tuple(new_files):
+        if _camera_name(src) not in selected_cameras:
+            src.unlink()
+            new_files.remove(src)
     exact_ids = tuple(sorted(int(value) for value in instance_ids))
     if exact_ids:
         grouped = {
@@ -241,7 +253,10 @@ def archive_new_preview_images(
             continue
         idx = counts.get(camera, 0)
         counts[camera] = idx + 1
-        dst_name = f"{camera}.png" if idx == 0 else f"{camera}_{idx:02d}.png"
+        if single_image_name and len(selected_cameras) == 1 and idx == 0:
+            dst_name = single_image_name
+        else:
+            dst_name = f"{camera}.png" if idx == 0 else f"{camera}_{idx:02d}.png"
         dst = task_dir / dst_name
         if dst.exists():
             dst.unlink()
@@ -258,6 +273,49 @@ def find_task_configs(config_dir: Path, sub_task_name: str) -> list[Path]:
         if benchmark.get("sub_task_name") == sub_task_name:
             matches.append(path)
     return matches
+
+
+def _task_key(config_path: Path) -> str:
+    benchmark = (_read_yaml(config_path).get("benchmark", {}) or {})
+    return benchmark.get("sub_task_name") or benchmark.get("task_name") or config_path.stem
+
+
+def _representative_score(config_path: Path) -> tuple[int, str]:
+    """Prefer a normal G2 config over robust/debug/experimental variants."""
+    stem = config_path.stem.lower()
+    score = 0
+    if "robust" in stem:
+        score += 100
+    if "debug" in stem:
+        score += 80
+    if any(term in stem for term in ("fake", "scripted", "acot_vla")):
+        score += 60
+    if stem.startswith("dual_"):
+        score += 40
+    if stem.startswith("g1op_"):
+        score += 10
+    if stem.startswith("g2op_"):
+        score -= 10
+    return score, stem
+
+
+def select_one_config_per_task(configs: Iterable[Path]) -> list[Path]:
+    """Choose one deterministic representative YAML for each benchmark task."""
+    grouped: dict[str, list[Path]] = {}
+    for config_path in configs:
+        benchmark = (_read_yaml(config_path).get("benchmark", {}) or {})
+        sub_task_name = benchmark.get("sub_task_name")
+        if not sub_task_name:
+            continue
+        grouped.setdefault(sub_task_name, []).append(config_path)
+    return [
+        min(grouped[key], key=_representative_score)
+        for key in sorted(grouped)
+    ]
+
+
+def task_dir_name(config_path: Path) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", _task_key(config_path)).strip("_") or config_path.stem
 
 
 def write_index(output_dir: Path, rows: list[dict]) -> None:
@@ -301,9 +359,13 @@ def run_one_config(
     geniesim_bin: str,
     num_instances: int = 1,
     instance_ids: Iterable[int] = (),
+    instruction_overlay: bool = True,
+    cameras: Iterable[str] = CAMERA_SUFFIXES.values(),
+    output_name: str | None = None,
+    single_image_name: str | None = None,
     dry_run: bool = False,
 ) -> dict:
-    task_dir = output_dir / config_path.stem
+    task_dir = output_dir / (output_name or config_path.stem)
     task_dir.mkdir(parents=True, exist_ok=True)
 
     metadata = load_metadata(config_path, config_dir)
@@ -317,6 +379,7 @@ def run_one_config(
         task_output_dir=task_dir / "eval",
         num_instances=num_instances,
         instance_ids=exact_ids,
+        instruction_overlay=instruction_overlay,
     )
     metadata["command"] = cmd
     metadata["num_instances"] = num_instances
@@ -335,10 +398,16 @@ def run_one_config(
     child_env.setdefault("GENIESIM_KIT_RUNTIME_DIR", str(output_dir / "_kit_runtime"))
     child_env.setdefault("GENIESIM_OMNI_DOCUMENTS_DIR", str(output_dir / "_kit_documents"))
     proc = subprocess.run(cmd, env=child_env)
+    selected_cameras = tuple(cameras)
     images = archive_new_preview_images(
-        debug_dir, before, task_dir, instance_ids=exact_ids
+        debug_dir,
+        before,
+        task_dir,
+        instance_ids=exact_ids,
+        cameras=selected_cameras,
+        single_image_name=single_image_name,
     )
-    expected_images = len(exact_ids) * len(CAMERA_SUFFIXES) if exact_ids else 1
+    expected_images = len(exact_ids) * len(selected_cameras) if exact_ids else len(selected_cameras)
     metadata.update(
         {
             "exit_code": proc.returncode,
@@ -377,6 +446,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Number of numeric subtask instances per config; 0 selects all",
     )
     parser.add_argument("--resume", action="store_true", help="Skip task dirs that already contain successful metadata")
+    parser.add_argument(
+        "--one-per-task",
+        action="store_true",
+        help="Group configs by sub_task_name and choose one representative config per task",
+    )
+    parser.add_argument(
+        "--camera",
+        choices=tuple(CAMERA_SUFFIXES.values()),
+        action="append",
+        default=[],
+        help="Only archive this camera (repeat for multiple cameras; default: all)",
+    )
+    parser.add_argument(
+        "--no-instruction",
+        action="store_true",
+        help="Save raw camera images without an instruction text overlay",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Write metadata/index without launching Isaac Sim")
     parser.add_argument("--fail-fast", action="store_true", help="Stop after the first failed preview")
     return parser.parse_args(argv)
@@ -389,13 +475,23 @@ def main(argv: list[str] | None = None) -> int:
     repo_root = args.repo_root.expanduser().resolve() if args.repo_root else discover_repo_root()
     debug_dir = args.debug_dir.expanduser().resolve() if args.debug_dir else repo_root / "debug_preview"
 
-    configs = iter_task_configs(config_dir, include=args.include, exclude=args.exclude, limit=args.limit)
+    configs = iter_task_configs(
+        config_dir,
+        include=args.include,
+        exclude=args.exclude,
+        limit=None if args.one_per_task else args.limit,
+    )
+    if args.one_per_task:
+        configs = select_one_config_per_task(configs)
+        if args.limit is not None:
+            configs = configs[: args.limit]
     output_dir.mkdir(parents=True, exist_ok=True)
     rows: list[dict] = []
     failures = 0
     instance_ids = tuple(
         int(value.strip()) for value in args.instance_ids.split(",") if value.strip()
     )
+    cameras = tuple(args.camera) or tuple(CAMERA_SUFFIXES.values())
 
     print(f"Preview gallery output: {output_dir}")
     print(f"Task configs: {len(configs)}")
@@ -403,7 +499,8 @@ def main(argv: list[str] | None = None) -> int:
     print()
 
     for idx, config_path in enumerate(configs, 1):
-        task_dir = output_dir / config_path.stem
+        output_name = task_dir_name(config_path) if args.one_per_task else config_path.stem
+        task_dir = output_dir / output_name
         if args.resume and _task_done(task_dir):
             metadata = _read_json(task_dir / "metadata.json")
             metadata["status"] = "skipped"
@@ -421,6 +518,10 @@ def main(argv: list[str] | None = None) -> int:
             geniesim_bin=args.geniesim_bin,
             num_instances=args.num_instances,
             instance_ids=instance_ids,
+            instruction_overlay=not args.no_instruction,
+            cameras=cameras,
+            output_name=output_name,
+            single_image_name="preview.png" if len(cameras) == 1 else None,
             dry_run=args.dry_run,
         )
         rows.append(row)

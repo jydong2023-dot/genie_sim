@@ -1,0 +1,73 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Xform "Objects"
+    {
+        def Xform "data_collection_table" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.01, 0, 0.2609)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+        }
+
+        def Xform "geniesim_2025_target_grasp_object" (
+            prepend payload = @/geniesim_assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_003/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.157347951001, -0.157347951001, -0.68937770657, 0.68937770657)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.02, 0.11, 0.853239362761)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.05
+            }
+        }
+
+        def Xform "geniesim_2025_beverage_bottle_001_iros" (
+            prepend payload = @/geniesim_assets/objects/iros/beverage_bottle/iros_beverage_bottle_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.706598706164, -0.706598706164, -0.0268005307245, 0.0268005307245)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.01, -0.29, 0.84776552923)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.05
+            }
+        }
+
+        def Xform "geniesim_2025_green_apple_001" (
+            prepend payload = @/geniesim_assets/objects/benchmark/green_apple/benchmark_green_apple_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.744862261288, 0, 0, 0.66721826392)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.03, 0.34, 0.855108663142)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.05
+            }
+        }
+
+    }
+}

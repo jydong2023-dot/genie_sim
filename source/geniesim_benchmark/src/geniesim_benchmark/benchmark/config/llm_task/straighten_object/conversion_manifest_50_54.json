@@ -1,0 +1,200 @@
+{
+  "converter": "convert_saved_tasks_to_benchmark.py",
+  "source_template": "/home/user/djy/genie_sim/source/data_collection/tasks/geniesim_2025/straighten_object/straighten_beverage_g2.json",
+  "origin": {
+    "position": [
+      2.91,
+      0.76,
+      0.0
+    ],
+    "quaternion_wxyz": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "records": [
+    {
+      "source": "/home/user/djy/genie_sim/source/data_collection/saved_task/straighten_and_place_beverage_g2/straighten_and_place_beverage_g2_0.json",
+      "source_index": 0,
+      "instance_id": 50,
+      "output": "/home/user/djy/genie_sim/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/straighten_object/50",
+      "target_id": "geniesim_2025_target_grasp_object",
+      "target_local_position": [
+        0.01,
+        0.01,
+        0.853239363
+      ],
+      "target_source_quaternion_wxyz": [
+        0.867456788,
+        0.0,
+        0.0,
+        -0.497512533
+      ],
+      "target_parent_quaternion_wxyz": [
+        0.613384577,
+        -0.613384577,
+        0.351794486,
+        -0.351794486
+      ],
+      "target_wrapper_entity_quaternion_wxyz": [
+        0.707106781,
+        0.707106781,
+        0.0,
+        0.0
+      ],
+      "arm": "left",
+      "upright_threshold_degrees": 11.459155902616466,
+      "unsupported_filter_rules": [
+        "is_gripper_in_view"
+      ]
+    },
+    {
+      "source": "/home/user/djy/genie_sim/source/data_collection/saved_task/straighten_and_place_beverage_g2/straighten_and_place_beverage_g2_1.json",
+      "source_index": 1,
+      "instance_id": 51,
+      "output": "/home/user/djy/genie_sim/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/straighten_object/51",
+      "target_id": "geniesim_2025_target_grasp_object",
+      "target_local_position": [
+        -0.03,
+        0.09,
+        0.853239363
+      ],
+      "target_source_quaternion_wxyz": [
+        0.841141388,
+        0.0,
+        0.0,
+        0.540815278
+      ],
+      "target_parent_quaternion_wxyz": [
+        0.59477678,
+        -0.59477678,
+        -0.38241415,
+        0.38241415
+      ],
+      "target_wrapper_entity_quaternion_wxyz": [
+        0.707106781,
+        0.707106781,
+        0.0,
+        0.0
+      ],
+      "arm": "left",
+      "upright_threshold_degrees": 11.459155902616466,
+      "unsupported_filter_rules": [
+        "is_gripper_in_view"
+      ]
+    },
+    {
+      "source": "/home/user/djy/genie_sim/source/data_collection/saved_task/straighten_and_place_beverage_g2/straighten_and_place_beverage_g2_2.json",
+      "source_index": 2,
+      "instance_id": 52,
+      "output": "/home/user/djy/genie_sim/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/straighten_object/52",
+      "target_id": "geniesim_2025_target_grasp_object",
+      "target_local_position": [
+        0.02,
+        0.11,
+        0.853239363
+      ],
+      "target_source_quaternion_wxyz": [
+        0.222523606,
+        0.0,
+        0.0,
+        0.974927302
+      ],
+      "target_parent_quaternion_wxyz": [
+        0.157347951,
+        -0.157347951,
+        -0.689377707,
+        0.689377707
+      ],
+      "target_wrapper_entity_quaternion_wxyz": [
+        0.707106781,
+        0.707106781,
+        0.0,
+        0.0
+      ],
+      "arm": "left",
+      "upright_threshold_degrees": 11.459155902616466,
+      "unsupported_filter_rules": [
+        "is_gripper_in_view"
+      ]
+    },
+    {
+      "source": "/home/user/djy/genie_sim/source/data_collection/saved_task/straighten_and_place_beverage_g2/straighten_and_place_beverage_g2_3.json",
+      "source_index": 3,
+      "instance_id": 53,
+      "output": "/home/user/djy/genie_sim/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/straighten_object/53",
+      "target_id": "geniesim_2025_target_grasp_object",
+      "target_local_position": [
+        -0.04,
+        0.11,
+        0.853239363
+      ],
+      "target_source_quaternion_wxyz": [
+        0.134998647,
+        0.0,
+        0.0,
+        0.990845783
+      ],
+      "target_parent_quaternion_wxyz": [
+        0.095458458,
+        -0.095458458,
+        -0.700633772,
+        0.700633772
+      ],
+      "target_wrapper_entity_quaternion_wxyz": [
+        0.707106781,
+        0.707106781,
+        0.0,
+        0.0
+      ],
+      "arm": "left",
+      "upright_threshold_degrees": 11.459155902616466,
+      "unsupported_filter_rules": [
+        "is_gripper_in_view"
+      ]
+    },
+    {
+      "source": "/home/user/djy/genie_sim/source/data_collection/saved_task/straighten_and_place_beverage_g2/straighten_and_place_beverage_g2_4.json",
+      "source_index": 4,
+      "instance_id": 54,
+      "output": "/home/user/djy/genie_sim/source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/straighten_object/54",
+      "target_id": "geniesim_2025_target_grasp_object",
+      "target_local_position": [
+        -0.02,
+        -0.05,
+        0.853239363
+      ],
+      "target_source_quaternion_wxyz": [
+        0.921506603,
+        0.0,
+        0.0,
+        0.388362692
+      ],
+      "target_parent_quaternion_wxyz": [
+        0.651603568,
+        -0.651603568,
+        -0.274613893,
+        0.274613893
+      ],
+      "target_wrapper_entity_quaternion_wxyz": [
+        0.707106781,
+        0.707106781,
+        0.0,
+        0.0
+      ],
+      "arm": "right",
+      "upright_threshold_degrees": 11.459155902616466,
+      "unsupported_filter_rules": [
+        "is_gripper_in_view"
+      ]
+    }
+  ],
+  "notes": [
+    "Source world poses were converted into the template-origin local frame.",
+    "Aligned.usda entity rotations are compensated so composed rigid-body poses match data_collection Aligned.usd poses.",
+    "is_gripper_in_view is not emitted because benchmark ADER has no equivalent checker.",
+    "Upright thresholds are converted from source radians to benchmark degrees unless overridden."
+  ]
+}

@@ -1,0 +1,298 @@
+{
+  "layout": {
+    "data_collection_table": {
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "full_description": [
+          "A white rectangular table with a smooth marble-patterned top and two white C-shaped legs ending in black caps, viewed from multiple angles revealing both dual-leg and single-central-support configurations."
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "shape": "rectangular",
+        "color": "white",
+        "dimensions": [
+          0.6,
+          1.0,
+          0.73
+        ],
+        "unit": "m"
+      },
+      "keywords": [
+        "table",
+        "white",
+        "furniture",
+        "center"
+      ],
+      "tags": [
+        "root_scene_dc_51",
+        "straighten_object_dc_51",
+        "data_collection_table"
+      ],
+      "usd": "benchmark_table_019",
+      "xyz": [
+        0.01,
+        0.0,
+        0.3609
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "geniesim_2025_target_grasp_object": {
+      "description": {
+        "semantic_name": [
+          "can"
+        ],
+        "object_category": [
+          "container",
+          "beverage can"
+        ],
+        "color": "orange",
+        "shape": "cylindrical",
+        "materials": [
+          "aluminum",
+          "plastic",
+          "printed label"
+        ],
+        "dimensions": [
+          0.06648768615722657,
+          0.1158542938232422,
+          0.06647872543334961
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "orange",
+          "metallic",
+          "printed",
+          "beverage"
+        ],
+        "full_description": [
+          "An orange aluminum soda can with a silver top and bottom, featuring the Fanta logo and branding."
+        ]
+      },
+      "keywords": [
+        "fanta",
+        "container",
+        "beverage can",
+        "left"
+      ],
+      "tags": [
+        "root_scene_dc_51",
+        "straighten_object_dc_51",
+        "geniesim_2025_target_grasp_object"
+      ],
+      "usd": "benchmark_beverage_bottle_003",
+      "xyz": [
+        -0.03,
+        0.09,
+        0.853239
+      ],
+      "xyzw": [
+        -0.594777,
+        -0.382414,
+        0.382414,
+        0.594777
+      ]
+    },
+    "geniesim_2025_beverage_bottle_001": {
+      "description": {
+        "semantic_name": [
+          "Coca-Cola can"
+        ],
+        "object_category": [
+          "container",
+          "beverage can"
+        ],
+        "color": "red",
+        "shape": "cylindrical",
+        "materials": [
+          "metal",
+          "plastic"
+        ],
+        "dimensions": [
+          0.06459999829530716,
+          0.11520000547170639,
+          0.06460000947117805
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "red",
+          "metallic",
+          "beverage",
+          "portable"
+        ],
+        "full_description": [
+          "A red aluminum beverage can with white 'Coca-Cola' script logo and Chinese characters on its surface."
+        ]
+      },
+      "keywords": [
+        "coke cola",
+        "container",
+        "beverage can",
+        "right"
+      ],
+      "tags": [
+        "root_scene_dc_51",
+        "straighten_object_dc_51",
+        "geniesim_2025_beverage_bottle_001"
+      ],
+      "usd": "benchmark_beverage_bottle_001",
+      "xyz": [
+        -0.01,
+        -0.32,
+        0.852326
+      ],
+      "xyzw": [
+        -0.595522,
+        -0.381252,
+        0.381252,
+        0.595522
+      ]
+    },
+    "geniesim_2025_apple_002": {
+      "description": {
+        "semantic_name": [
+          "apple"
+        ],
+        "object_category": [
+          "food",
+          "fruit"
+        ],
+        "color": "red",
+        "shape": "round",
+        "materials": [
+          "fruit flesh",
+          "skin"
+        ],
+        "dimensions": [
+          0.09300000220537186,
+          0.09459999948740005,
+          0.09179999679327011
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "red",
+          "ripe",
+          "smooth",
+          "natural"
+        ],
+        "full_description": [
+          "A red and yellow apple with a glossy surface and a short brown stem."
+        ]
+      },
+      "keywords": [
+        "apple",
+        "food",
+        "fruit",
+        "left"
+      ],
+      "tags": [
+        "root_scene_dc_51",
+        "straighten_object_dc_51",
+        "geniesim_2025_apple_002"
+      ],
+      "usd": "benchmark_apple_002",
+      "xyz": [
+        0.03,
+        0.32,
+        0.8673
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.795565,
+        -0.605868
+      ]
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "links": [
+        {
+          "source": "root_scene_dc_51",
+          "target": "straighten_object_dc_51"
+        },
+        {
+          "source": "straighten_object_dc_51",
+          "target": "data_collection_table"
+        },
+        {
+          "source": "straighten_object_dc_51",
+          "target": "geniesim_2025_target_grasp_object"
+        },
+        {
+          "source": "straighten_object_dc_51",
+          "target": "geniesim_2025_beverage_bottle_001"
+        },
+        {
+          "source": "straighten_object_dc_51",
+          "target": "geniesim_2025_apple_002"
+        }
+      ],
+      "multigraph": false,
+      "nodes": [
+        {
+          "id": "root_scene_dc_51"
+        },
+        {
+          "id": "straighten_object_dc_51"
+        },
+        {
+          "id": "data_collection_table",
+          "tags": [
+            "table",
+            "white",
+            "furniture",
+            "center"
+          ]
+        },
+        {
+          "id": "geniesim_2025_target_grasp_object",
+          "tags": [
+            "fanta",
+            "container",
+            "beverage can",
+            "left"
+          ]
+        },
+        {
+          "id": "geniesim_2025_beverage_bottle_001",
+          "tags": [
+            "coke cola",
+            "container",
+            "beverage can",
+            "right"
+          ]
+        },
+        {
+          "id": "geniesim_2025_apple_002",
+          "tags": [
+            "apple",
+            "food",
+            "fruit",
+            "left"
+          ]
+        }
+      ]
+    }
+  },
+  "scene_id": "straighten_object",
+  "source": {
+    "format": "data_collection_saved_task",
+    "file": "/home/user/djy/genie_sim/source/data_collection/saved_task/straighten_and_place_beverage_g2/straighten_and_place_beverage_g2_1.json"
+  }
+}

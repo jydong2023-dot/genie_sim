@@ -377,4 +377,5 @@ cat logs/first_run_demos/manifest.json
 
 - [README.md](README.md) — 完整安装、一键采集、本地部署
 - [README_LAYOUT_PREVIEW.md](README_LAYOUT_PREVIEW.md) — 仅生成布局 + Isaac 预览（不采轨迹）
+- [README_SAVED_TASK_TO_BENCHMARK.md](README_SAVED_TASK_TO_BENCHMARK.md) — 从 saved task 生成到 benchmark 场景加载
 - [TASK_CONFIG_GUIDE.md](TASK_CONFIG_GUIDE.md) — 任务 JSON 配置说明

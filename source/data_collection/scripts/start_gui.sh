@@ -66,7 +66,10 @@ if [ "$ACTION" == "run" ]; then
     mkdir -p ~/docker/isaac-sim/logs
     mkdir -p ~/docker/isaac-sim/pkg
     sudo chown -R 1234:1234 ~/docker/isaac-sim
-    sudo setfacl -m u:1234:rwX $CURRENT_DIR/scripts
+    # The container runs as uid 1234 and must be able to read every sourced
+    # helper, not only traverse the scripts directory.
+    sudo setfacl -R -m u:1234:rwX $CURRENT_DIR/scripts
+    sudo setfacl -m d:u:1234:rwX $CURRENT_DIR/scripts
     sudo mkdir -p $CURRENT_DIR/saved_task && sudo setfacl -m u:1234:rwX -R $CURRENT_DIR/saved_task
     sudo mkdir -p $CURRENT_DIR/recording_data && sudo setfacl -m u:1234:rwX -R $CURRENT_DIR/recording_data
     [ -d $CURRENT_DIR/config ] && sudo setfacl -m u:1234:rwX -R $CURRENT_DIR/config

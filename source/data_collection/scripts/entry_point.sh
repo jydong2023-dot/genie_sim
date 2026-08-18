@@ -6,7 +6,17 @@ set -e
 export ROS_DISTRO=jazzy
 export ISAACSIM_HOME=/isaac-sim
 export CUROBO_PATH=/tmp/curobo
-export SIM_REPO_ROOT=/geniesim/main/data_collection
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export SIM_REPO_ROOT="${SIM_REPO_ROOT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
+
+source "${SCRIPT_DIR}/isaac_sim_runtime.sh"
+prepare_isaac_sim_ros_env
+prepare_isaac_sim_cache
+ensure_isaac_sim_python_package ruckig 'ruckig==0.12.2'
+require_isaac_sim_python_package \
+    curobo \
+    curobo \
+    'from curobo.cuda_robot_model.cuda_robot_model import CudaRobotModel'
 
 # user 1234 access
 sudo setfacl -m u:1234:rwX /isaac-sim/.cache
@@ -17,7 +27,7 @@ sudo setfacl -m u:1234:rwX /isaac-sim/.local/share/ov/data
 sudo setfacl -m u:1234:rwX /isaac-sim/.local/share/ov/pkg
 
 # bashrc
-echo "export SIM_REPO_ROOT=/geniesim/main/data_collection" >>~/.bashrc
+echo "export SIM_REPO_ROOT=${SIM_REPO_ROOT}" >>~/.bashrc
 echo "export SIM_ASSETS=/geniesim_assets" >>~/.bashrc
 echo "export ENABLE_SIM=1" >>~/.bashrc
 echo "export ROS_DISTRO=${ROS_DISTRO}" >>~/.bashrc

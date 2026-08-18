@@ -130,6 +130,7 @@ class BenchmarkConfig:
     interactive: bool = False
     seed: int = 1
     preview: bool = False
+    preview_instruction_overlay: bool = True
     keep_open: bool = False
     fake_policy_max_steps: int = 90
     fake_policy_amplitude: float = 0.08

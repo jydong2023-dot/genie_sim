@@ -1,0 +1,33 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "geniesim_2025_target_grasp_object|[0.2,0.2,0.2]|right_gripper"
+              },
+              {
+                "StepOut": 200
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "Upright": "geniesim_2025_target_grasp_object|11.4591559026"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "straighten_object"
+  }
+}

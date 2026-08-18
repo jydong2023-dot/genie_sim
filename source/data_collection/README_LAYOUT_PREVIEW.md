@@ -72,7 +72,7 @@ cd /geniesim/main/data_collection
 docker exec -it data_collection_open_source bash -lc '
   export SIM_ASSETS=/geniesim_assets
   cd /geniesim/main/data_collection
-  /isaac-sim/python.sh scripts/preview_layout.py --gui \
+  /isaac-sim/python.sh scripts/generate_layout.py --gui \
     --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
     --output-dir /geniesim/main/data_collection/layout_preview_output_run1 \
     --num-episodes 2
@@ -107,7 +107,7 @@ docker exec -it data_collection_open_source bash -lc '
 docker exec -it data_collection_open_source bash -lc '
   export SIM_ASSETS=/geniesim_assets
   cd /geniesim/main/data_collection
-  /isaac-sim/python.sh scripts/preview_layout.py --gui \
+  /isaac-sim/python.sh scripts/generate_layout.py --gui \
     --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
     --output-dir /geniesim/main/data_collection/layout_preview_output_run1 \
     --skip-generate
@@ -122,7 +122,7 @@ docker exec -it data_collection_open_source bash -lc '
 docker exec -it data_collection_open_source bash -lc '
   export SIM_ASSETS=/geniesim_assets
   cd /geniesim/main/data_collection
-  /isaac-sim/python.sh scripts/preview_layout.py --layout-only \
+  /isaac-sim/python.sh scripts/generate_layout.py --layout-only \
     --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
     --output-dir /geniesim/main/data_collection/layout_only_output \
     --num-episodes 2

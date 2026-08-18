@@ -153,7 +153,7 @@ tasks/<collection>/<task>/<robot>/<name>.json
 |---|---|
 | Task templates | [`tasks/geniesim_2025/<task>/<g1\|g2>/*.json`](tasks/) |
 | Server / client entries | [`scripts/data_collector_server.py`](scripts/), [`scripts/run_data_collection.py`](scripts/) |
-| Layout generation + Isaac preview (no trajectory) | [`scripts/preview_layout.py`](scripts/preview_layout.py) · design: [`docs/superpowers/specs/2026-07-21-layout-preview-design.md`](docs/superpowers/specs/2026-07-21-layout-preview-design.md) |
+| Layout generation + Isaac preview (no trajectory) | [`scripts/generate_layout.py`](scripts/generate_layout.py) · design: [`docs/superpowers/specs/2026-07-21-layout-preview-design.md`](docs/superpowers/specs/2026-07-21-layout-preview-design.md) |
 | Orchestrators | [`scripts/run_data_collection.sh`](scripts/) (one-shot), [`scripts/start_gui.sh`](scripts/) (interactive), [`scripts/*entrypoint*.sh`](scripts/) |
 | Robot / cuRobo configs | [`config/robot_cfg/{G1,G2}*.json`](config/), [`config/curobo/configs/`](config/curobo/) |
 | aimdk protocol | [`common/aimdk/protocol/`](common/aimdk/) |
@@ -186,7 +186,7 @@ Then generate and load layouts from Terminal 2:
 
 ```bash
 export SIM_ASSETS=/path/to/geniesim_assets
-python scripts/preview_layout.py --gui \
+python scripts/generate_layout.py --gui \
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
   --output-dir /path/to/genie_sim/output \
   --num-episodes 2
@@ -210,7 +210,7 @@ each stage receives only the remaining time. It does not set a deadline on the
 subsequent `init_robot` RPC. Camera capture is strict: every requested camera
 must return an image and all PNGs must stage successfully before the script
 starts publishing the final image files one by one.
-`preview_layout.py` accepts the complete CLI surface below:
+`generate_layout.py` accepts the complete CLI surface below:
 
 | Flag | Effect |
 |---|---|

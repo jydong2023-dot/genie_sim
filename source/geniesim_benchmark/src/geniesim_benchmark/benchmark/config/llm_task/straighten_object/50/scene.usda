@@ -1,0 +1,73 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Xform "Objects"
+    {
+        def Xform "data_collection_table" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.01, 0, 0.2609)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+        }
+
+        def Xform "geniesim_2025_target_grasp_object" (
+            prepend payload = @/geniesim_assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_003/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.613384577275, -0.613384577275, 0.351794485974, -0.351794485974)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.01, 0.01, 0.853239362761)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.05
+            }
+        }
+
+        def Xform "geniesim_2025_beverage_bottle_004" (
+            prepend payload = @/geniesim_assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_004/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.493814919486, 0.493814919486, -0.506109499311, 0.506109499311)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.03, -0.35, 0.850766897835)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.05
+            }
+        }
+
+        def Xform "geniesim_2025_lemon_030" (
+            prepend payload = @/geniesim_assets/objects/benchmark/lemon/benchmark_lemon_030/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.867572575228, 0, 0, 0.497310593806)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0.25, 0.862146798223)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.05
+            }
+        }
+
+    }
+}

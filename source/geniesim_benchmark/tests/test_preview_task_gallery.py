@@ -92,6 +92,7 @@ def test_build_preview_command_forces_fast_headless_preview(tmp_path):
         "--benchmark.num_instances=1",
         "--benchmark.enable_vec=0",
         "--benchmark.record=false",
+        "--benchmark.keep_open=false",
         f"--benchmark.output_dir={output_dir}",
     ]
 
@@ -122,6 +123,17 @@ def test_build_preview_command_can_select_exact_instance_ids(tmp_path):
     assert "--benchmark.instance_ids=8,9" in cmd
 
 
+def test_build_preview_command_can_disable_instruction_overlay(tmp_path):
+    cmd = gallery.build_preview_command(
+        tmp_path / "task.yaml",
+        geniesim_bin="geniesim",
+        task_output_dir=tmp_path / "out",
+        instruction_overlay=False,
+    )
+
+    assert "--benchmark.preview_instruction_overlay=false" in cmd
+
+
 def test_archive_new_preview_images_moves_each_camera_to_task_dir(tmp_path):
     debug_dir = tmp_path / "debug_preview"
     task_dir = tmp_path / "gallery" / "g2op_if_pick_block_color"
@@ -145,6 +157,57 @@ def test_archive_new_preview_images_moves_each_camera_to_task_dir(tmp_path):
     assert (task_dir / "left_hand.png").read_bytes() == b"left"
     assert (task_dir / "right_hand.png").read_bytes() == b"right"
     assert old.exists()
+
+
+def test_archive_single_camera_as_preview_and_discards_other_new_images(tmp_path):
+    debug_dir = tmp_path / "debug_preview"
+    task_dir = tmp_path / "gallery" / "pick_block_color"
+    debug_dir.mkdir()
+    before = gallery.snapshot_preview_images(debug_dir)
+    for camera in ("head", "left_hand", "right_hand"):
+        (debug_dir / f"preview_0000_2000_{camera}.png").write_bytes(camera.encode())
+
+    archived = gallery.archive_new_preview_images(
+        debug_dir,
+        before,
+        task_dir,
+        cameras=("head",),
+        single_image_name="preview.png",
+    )
+
+    assert archived == {"head": str(task_dir / "preview.png")}
+    assert (task_dir / "preview.png").read_bytes() == b"head"
+    assert not list(debug_dir.glob("preview_*.png"))
+
+
+def test_select_one_config_per_task_prefers_base_g2_config(tmp_path):
+    paths = []
+    for name in (
+        "dual_agx_nero_if_pick_block_color.yaml",
+        "g2op_robust_posegen_pick_block_color.yaml",
+        "g2op_if_pick_block_color.yaml",
+        "g2op_manip_open_door.yaml",
+    ):
+        path = tmp_path / name
+        sub_task = "open_door" if "open_door" in name else "pick_block_color"
+        _write_yaml(path, {"benchmark": {"sub_task_name": sub_task}})
+        paths.append(path)
+
+    selected = gallery.select_one_config_per_task(paths)
+
+    assert [path.name for path in selected] == [
+        "g2op_manip_open_door.yaml",
+        "g2op_if_pick_block_color.yaml",
+    ]
+
+
+def test_select_one_config_per_task_skips_scene_debug_configs(tmp_path):
+    task = tmp_path / "task.yaml"
+    debug = tmp_path / "scene_debug.yaml"
+    _write_yaml(task, {"benchmark": {"sub_task_name": "pick_toy"}})
+    _write_yaml(debug, {"benchmark": {"task_name": "debug_scene", "sub_task_name": ""}})
+
+    assert gallery.select_one_config_per_task([task, debug]) == [task]
 
 
 def test_archive_exact_ids_and_build_contact_sheet(tmp_path):

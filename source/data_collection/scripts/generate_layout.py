@@ -11,17 +11,17 @@ data_collection Isaac gRPC server (see --help / docs for how to start it).
 Examples
 --------
 # Layout only (no Isaac)
-python scripts/preview_layout.py --layout-only \\
+python scripts/generate_layout.py --layout-only \\
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \\
   --output-dir /path/to/genie_sim/output
 
 # GUI preview (Isaac window stays open; press Enter between instances)
-python scripts/preview_layout.py --gui \\
+python scripts/generate_layout.py --gui \\
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \\
   --output-dir /path/to/genie_sim/output --num-episodes 2
 
 # Headless: load + save camera PNGs
-python scripts/preview_layout.py --headless --save-images \\
+python scripts/generate_layout.py --headless --save-images \\
   --task-template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \\
   --output-dir /path/to/genie_sim/output --num-episodes 2
 """
